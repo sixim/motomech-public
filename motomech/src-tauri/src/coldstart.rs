@@ -69,7 +69,7 @@ pub fn resolve_models(make: &str, year: i64, decoded: &str) -> Result<Vec<ModelM
         make.replace(' ', "%20"));
     let body = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
-        .user_agent("repairbench/0.1").build()?
+        .user_agent("motomech/0.1").build()?
         .get(&url).send()?.text()?;
     let doc: serde_json::Value = serde_json::from_str(&body)
         .context("车型词表返回的不是 JSON")?;
@@ -100,7 +100,7 @@ pub fn resolve_models(make: &str, year: i64, decoded: &str) -> Result<Vec<ModelM
 fn fetch(url: &str) -> Result<serde_json::Value> {
     let body = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(45))
-        .user_agent("repairbench/0.1").build()?
+        .user_agent("motomech/0.1").build()?
         .get(url).send()?.text()?;
     Ok(serde_json::from_str(&body)?)
 }
@@ -221,7 +221,7 @@ fn research_inner2(p: &Platform, vin: Option<String>, make: &str, model: &str, y
         notes.push(format!(
             "🔴 **NHTSA 车型词表里没有与「{model}」对应的写法** —— 召回与投诉都查不到。\
              这不是「这台车没有召回」，是「没查到」。\
-             人工确认 NHTSA 对这台车叫什么，再用 repairbench tool nhtsa.recalls 手查。"));
+             人工确认 NHTSA 对这台车叫什么，再用 motomech tool nhtsa.recalls 手查。"));
     }
     let _names: Vec<String> = matches.iter().map(|m| m.name.clone()).collect();
 
@@ -363,7 +363,7 @@ fn research_inner2(p: &Platform, vin: Option<String>, make: &str, model: &str, y
         "已自动拿到的：身份（VIN 解码 A 级）、召回 {} 条、投诉 {} 条。\
          **拿不到的**：发动机代际代号、适用性排除项、硬红线、任何规格 —— \
          这些没有官方接口，必须靠手册与人工研究。档案里留空并已登记为待核实，\
-         跑 `repairbench gaps -v {vid}` 看清单。",
+         跑 `motomech gaps -v {vid}` 看清单。",
         recalls.len(), total));
 
     Ok(ColdStart { vin, identity, vehicle_id: vid,
@@ -379,12 +379,12 @@ fn render_yaml(vid: &str, make: &str, model: &str, year: i64, vin: &str,
                today: &str) -> String {
     let mut o = String::new();
     o.push_str(&format!("# {year} {make} {model} — 适用性真相源\n#\n"));
-    o.push_str(&format!("# 由 `repairbench coldstart --vin {vin}` 于 {today} 生成。\n"));
+    o.push_str(&format!("# 由 `motomech coldstart --vin {vin}` 于 {today} 生成。\n"));
     o.push_str("#\n# ⚠️ 这是**骨架**，不是完成的档案。\n");
     o.push_str("#    自动拿到的只有：身份、召回、投诉 —— 它们有官方接口。\n");
     o.push_str("#    **拿不到的**：发动机代际、适用性排除项、硬红线、任何规格数值。\n");
     o.push_str("#    那些留空是故意的 —— 填一个看起来像样的猜测，比空着危险得多。\n");
-    o.push_str("#    跑 `repairbench gaps` 看还缺什么。\n\n");
+    o.push_str("#    跑 `motomech gaps` 看还缺什么。\n\n");
 
     o.push_str(&format!("id: {vid}\nmake: {make}\nmodel: \"{}\"\nyear: {year}\n", esc(model)));
     o.push_str(&format!("vin: {vin}                 # A｜NHTSA 解码\n"));

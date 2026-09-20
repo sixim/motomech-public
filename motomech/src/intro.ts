@@ -128,7 +128,7 @@ export function runIntro(mount: HTMLElement, onDone: () => void) {
     <div class="spark-layer"></div>
     <div class="intro-title">
       <div class="zh">两个人 · 两个轮</div>
-      <div class="en">repairbench</div>
+      <div class="en">motomech</div>
     </div>
     <div class="skip">点击任意处跳过</div>`;
   mount.appendChild(ov);

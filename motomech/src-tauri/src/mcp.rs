@@ -16,7 +16,7 @@ const PROTOCOL: &str = "2025-03-26";
 
 pub fn serve(root: Option<String>) -> anyhow::Result<()> {
     // stdout 只走协议，一切人类可读信息走 stderr
-    eprintln!("repairbench mcp · 协议 {PROTOCOL} · 等待 stdio");
+    eprintln!("motomech mcp · 协议 {PROTOCOL} · 等待 stdio");
     let stdin = std::io::stdin();
     let mut out = std::io::stdout();
     for line in stdin.lock().lines() {
@@ -62,7 +62,7 @@ fn handle(msg: &Value, root: Option<String>) -> Option<Value> {
         "initialize" => Some(rpc_result(id, json!({
             "protocolVersion": PROTOCOL,
             "capabilities": {"tools":{"listChanged":false}},
-            "serverInfo": {"name":"repairbench","version":env!("CARGO_PKG_VERSION")},
+            "serverInfo": {"name":"motomech","version":env!("CARGO_PKG_VERSION")},
         }))),
         "notifications/initialized" => None,
         "tools/list" => Some(rpc_result(id, json!({"tools": tool_definitions()}))),

@@ -92,7 +92,7 @@ pub fn find(p: &Platform, vehicle: Option<&str>) -> Result<GapReport> {
                     } else { String::new() }),
                 blocks: String::new(),
                 who: Who::Both,
-                how: "看清单：repairbench crossval。要真正关掉，需引入第二个独立来源\
+                how: "看清单：motomech crossval。要真正关掉，需引入第二个独立来源\
                       （BMW RepROM / 官方 fiche / 厂商 TSB），那一步只有你能办".into(),
             });
         }
@@ -127,7 +127,7 @@ pub fn find(p: &Platform, vehicle: Option<&str>) -> Result<GapReport> {
                          那它更不该出现在视频里。观众会照抄，而没人会回来核对。".into(),
                 blocks: String::new(),
                 who: Who::User,
-                how: "repairbench script 看具体位置；删掉或改口，别念那个数".into(),
+                how: "motomech script 看具体位置；删掉或改口，别念那个数".into(),
             });
         }
         if unsourced > 0 {
@@ -139,7 +139,7 @@ pub fn find(p: &Platform, vehicle: Option<&str>) -> Result<GapReport> {
                 detail: "不一定是错的，但说不出出处。视频里的数字会被观众照抄。".into(),
                 blocks: String::new(),
                 who: Who::User,
-                how: "repairbench script 看具体位置；删掉、改口，或去核实后入库".into(),
+                how: "motomech script 看具体位置；删掉、改口，或去核实后入库".into(),
             });
         }
     }
@@ -188,7 +188,7 @@ pub fn find(p: &Platform, vehicle: Option<&str>) -> Result<GapReport> {
             title: "本车的召回从未查过".into(),
             detail: "空的 open_recalls 是「没查」不是「没有」。依赖召回的门禁拿不到判断依据。".into(),
             blocks: "P9 上路".into(), who: Who::App,
-            how: format!("repairbench tool nhtsa.recalls make={make} model=\"{model}\" year={year}"),
+            how: format!("motomech tool nhtsa.recalls make={make} model=\"{model}\" year={year}"),
         });
     }
     if rs.known_issues_checked_at.is_none() {
@@ -197,7 +197,7 @@ pub fn find(p: &Platform, vehicle: Option<&str>) -> Result<GapReport> {
             title: "本车的故障模式从未查过".into(),
             detail: "不知道这台车会怎么坏，就不知道该重点检查什么。".into(),
             blocks: "P1 静态评估".into(), who: Who::App,
-            how: format!("repairbench tool nhtsa.complaints make={make} model=\"{model}\" year={year}"),
+            how: format!("motomech tool nhtsa.complaints make={make} model=\"{model}\" year={year}"),
         });
     }
 

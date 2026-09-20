@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-launchagent.sh — install repairbench as a macOS LaunchAgent
+# install-launchagent.sh — install motomech as a macOS LaunchAgent
 #
 # Usage:
 #   bash tools/install-launchagent.sh [--port 8765]
@@ -13,14 +13,14 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PORT="${1:-8765}"
-PLIST_SRC="$REPO_ROOT/knowledge/repairbench.serve.plist.template"
-PLIST_LABEL="com.repairbench.serve"
+PLIST_SRC="$REPO_ROOT/knowledge/motomech.serve.plist.template"
+PLIST_LABEL="com.motomech.serve"
 PLIST_DEST="$HOME/Library/LaunchAgents/${PLIST_LABEL}.plist"
-BIN="$REPO_ROOT/bin/repairbench"
+BIN="$REPO_ROOT/bin/motomech"
 
 if [ ! -f "$BIN" ]; then
   echo "❌  Binary not found at $BIN"
-  echo "   Run: cd repairbench && cargo build --release && cp target/release/repairbench ../bin/"
+  echo "   Run: cd motomech && cargo build --release && cp target/release/motomech ../bin/"
   exit 1
 fi
 

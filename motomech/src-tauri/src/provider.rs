@@ -278,7 +278,7 @@ pub fn render_health(list: &[Health], default_id: &str) -> String {
             h.id, h.cost, h.model, h.ms, d));
         o.push_str(&format!("     {}\n", h.detail));
     }
-    o.push_str("\n用 `repairbench providers --set <id>` 换默认通道。\n");
+    o.push_str("\n用 `motomech providers --set <id>` 换默认通道。\n");
     o.push_str(concat!(
         "\nℹ️ 这套东西**不需要尖端模型**：权威数值一律逐字来自规格库，\n",
         "   模型只负责组织语言，且被明确禁止引入 facts 之外的数字。\n",

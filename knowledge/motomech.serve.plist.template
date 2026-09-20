@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>Label</key><string>com.simon.repairbench.serve</string>
+  <key>Label</key><string>com.simon.motomech.serve</string>
 
   <!-- 指向 bin/ 下的稳定副本，不指 target/ ——
        target/ 是构建产物目录，cargo clean 会清掉它，那样服务会无声断掉。 -->
   <key>ProgramArguments</key>
   <array>
-    <string>REPAIRBENCH_ROOT/bin/repairbench</string>
+    <string>REPAIRBENCH_ROOT/bin/motomech</string>
     <string>serve</string>
     <string>--host</string><string>127.0.0.1</string>
     <string>--port</string><string>8765</string>

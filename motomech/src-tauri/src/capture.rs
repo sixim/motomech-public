@@ -129,7 +129,7 @@ pub fn page(vehicles: &[String], current: &str) -> String {
         if v == current { " selected" } else { "" })).collect();
     format!(r##"<!doctype html><html lang="zh"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>采集 · repairbench</title><style>
+<title>采集 · motomech</title><style>
 :root{{--bg:#010309;--card:#0a1330;--line:#3d6bff33;--blue:#4a7dff;--bright:#6fa0ff;--txt:#eaf1ff;--dim:#7f92c8}}
 *{{box-sizing:border-box}}
 body{{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 -apple-system,system-ui,sans-serif;

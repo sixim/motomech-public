@@ -3,7 +3,7 @@
 #
 # ⚠️ 2026-09-19 踩到的坑:直接 `cp` 覆盖**正在运行**的二进制,
 #    会破坏它的代码签名,macOS 随后用 SIGKILL 杀掉 —— 表现是
-#    `repairbench --help` 退出码 **137**、没有任何输出、也没有报错信息。
+#    `motomech --help` 退出码 **137**、没有任何输出、也没有报错信息。
 #    很容易被误判成「程序坏了」,实际是签名问题。
 #
 # 三件事缺一不可:
@@ -12,9 +12,9 @@
 #    ③ 用 mv 原子替换,不是 cp
 set -euo pipefail
 ROOT="$HOME/Ai Developer/AI+摩托维修助理"
-SRC="$ROOT/repairbench/src-tauri/target/release/repairbench"
-DST="$ROOT/bin/repairbench"
-PLIST="$HOME/Library/LaunchAgents/com.simon.repairbench.serve.plist"
+SRC="$ROOT/motomech/src-tauri/target/release/motomech"
+DST="$ROOT/bin/motomech"
+PLIST="$HOME/Library/LaunchAgents/com.simon.motomech.serve.plist"
 
 [ -f "$SRC" ] || { echo "❌ 没有 release 二进制,先 cargo build --release" >&2; exit 1; }
 

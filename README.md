@@ -1,4 +1,4 @@
-# repairbench
+# motomech
 
 **Connect your service manual to your AI assistant — with source grading, applicability guards, and safety gates.**
 
@@ -14,12 +14,12 @@ The issue isn't that AI is dumb. It's that AI doesn't know *which bike you have*
 
 ---
 
-## What repairbench does
+## What motomech does
 
-repairbench is a **local service manual intelligence layer** between your service manual and your AI assistant.
+motomech is a **local service manual intelligence layer** between your service manual and your AI assistant.
 
 You bring your manual — as a PDF, or by photographing a physical book with your phone.
-repairbench indexes it locally (the text never leaves your machine) and exposes a structured
+motomech indexes it locally (the text never leaves your machine) and exposes a structured
 query interface your AI assistant can call tool-by-tool.
 
 ```
@@ -28,7 +28,7 @@ Your service manual (PDF or physical book)
 Page index  ← stays on your machine, gitignored
     +
 VEHICLE.yml  ← source-graded specs, applicability rules
-    ↓  repairbench mcp
+    ↓  motomech mcp
 MCP server
     ↓  tool calls
 Claude / Cursor / any MCP-compatible AI
@@ -63,10 +63,10 @@ Not a guess. A page reference you can go check.
 ## Four modes, one binary
 
 ```bash
-repairbench              # Desktop app (Tauri)
-repairbench serve        # Local web server (phone-accessible via Tailscale)
-repairbench mcp          # MCP server for Claude, Cursor, etc.
-repairbench <command>    # CLI: spec, search, job-card, diag, symptom, log, …
+motomech              # Desktop app (Tauri)
+motomech serve        # Local web server (phone-accessible via Tailscale)
+motomech mcp          # MCP server for Claude, Cursor, etc.
+motomech <command>    # CLI: spec, search, job-card, diag, symptom, log, …
 ```
 
 ---
@@ -77,7 +77,7 @@ repairbench <command>    # CLI: spec, search, job-card, diag, symptom, log, …
 
 ```bash
 # From a VIN — queries NHTSA, generates VEHICLE.yml skeleton automatically
-repairbench coldstart --vin YOUR_VIN
+motomech coldstart --vin YOUR_VIN
 
 # Or copy and edit an example manually
 cp -r vehicles/2009-BMW-R1200GS vehicles/YEAR-MAKE-MODEL
@@ -113,7 +113,7 @@ Requires: `brew install ocrmypdf`
 Start the local server, then photograph pages with your phone:
 
 ```bash
-repairbench serve --port 8765
+motomech serve --port 8765
 ```
 
 Open `http://localhost:8765/capture` on your phone (on the same network, or via
@@ -138,8 +138,8 @@ Add to your MCP client config (Claude Desktop, Cursor, etc.):
 ```json
 {
   "mcpServers": {
-    "repairbench": {
-      "command": "/path/to/repairbench",
+    "motomech": {
+      "command": "/path/to/motomech",
       "args": ["mcp"]
     }
   }
@@ -149,10 +149,10 @@ Add to your MCP client config (Claude Desktop, Cursor, etc.):
 ### 4. Build from source
 
 ```bash
-cd repairbench
+cd motomech
 npm install
 cargo build --release
-cp target/release/repairbench ../bin/
+cp target/release/motomech ../bin/
 ```
 
 Requires Rust (stable) and Node.js 18+.
@@ -189,8 +189,8 @@ The most valuable contribution is a vehicle package for a make/model you own.
 **Step 1:** Generate the skeleton
 
 ```bash
-repairbench coldstart --vin YOUR_VIN
-# or: repairbench coldstart --make BMW --model "R1200GS" --year 2009
+motomech coldstart --vin YOUR_VIN
+# or: motomech coldstart --make BMW --model "R1200GS" --year 2009
 ```
 
 **Step 2:** Fill in `VEHICLE.yml` — see [VEHICLE.md](VEHICLE.md) for the schema.
@@ -210,7 +210,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide.
 ## Repo layout
 
 ```
-repairbench/          Rust/Tauri engine — 4 modes in one binary
+motomech/          Rust/Tauri engine — 4 modes in one binary
   src-tauri/src/
     coldstart.rs      VIN → VEHICLE.yml generation (NHTSA decoder)
     specref.rs        Spec lookup with source grading

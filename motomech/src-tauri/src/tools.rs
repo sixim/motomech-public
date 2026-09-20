@@ -123,7 +123,7 @@ pub fn call(p: &Platform, id: &str, args: &std::collections::HashMap<String, Str
 
     let body = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
-        .user_agent("repairbench/0.1")
+        .user_agent("motomech/0.1")
         .build()?
         .get(&url).send()?.text()?;
     let data: serde_json::Value = serde_json::from_str(&body)
@@ -145,7 +145,7 @@ fn nhtsa_vocabulary(make: &str, year: &str) -> Result<Vec<String>> {
         enc(make), enc(year));
     let body = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
-        .user_agent("repairbench/0.1")
+        .user_agent("motomech/0.1")
         .build()?.get(&url).send()?.text()?;
     let v: serde_json::Value = serde_json::from_str(&body)?;
     Ok(v.get("Results").and_then(|x| x.as_array()).map(|a| a.iter()

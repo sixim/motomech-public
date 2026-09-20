@@ -1,7 +1,7 @@
 import { runIntro } from "./intro";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 
-// 在 Tauri 里走 invoke；在浏览器里走 HTTP API（repairbench serve）。
+// 在 Tauri 里走 invoke；在浏览器里走 HTTP API（motomech serve）。
 // 同一份数据两条路 —— 界面因此能在浏览器里验证，不依赖 GUI 截图权限。
 // 两条路背后是同一个 api 层，所以「已排除 N 份」这类提示两边一字不差。
 const inTauri = "__TAURI_INTERNALS__" in window;
@@ -13,7 +13,7 @@ async function call<T>(cmd: string, args: Record<string, unknown> = {}): Promise
     .filter(([, v]) => v != null && v !== "")
     .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join("&");
   const r = await fetch(`${API}/v1/${cmd}${qs ? "?" + qs : ""}`);
-  if (!r.ok) throw new Error(`HTTP ${r.status} —— repairbench serve 没在跑？`);
+  if (!r.ok) throw new Error(`HTTP ${r.status} —— motomech serve 没在跑？`);
   const j = await r.json();
   if (j && j.error) throw new Error(j.error);
   return j as T;

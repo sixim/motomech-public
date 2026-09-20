@@ -451,14 +451,14 @@ pub fn build(p: &Platform, vehicle: Option<&str>, phase: Option<&str>) -> Result
                 "🔴 **本车的召回从未查过**（档案里没有合法的 recalls_checked_at 日期）。",
                 "open_recalls 现在是 {} 条 —— 那是「没查」不是「没有」。",
                 "任何依赖召回的门禁都拿不到判断依据，只能放行。",
-                "查法：repairbench tool nhtsa.recalls make=<厂> model=<型> year={}"),
+                "查法：motomech tool nhtsa.recalls make=<厂> model=<型> year={}"),
                 open_recalls.len(),
                 doc.get("year").and_then(|x| x.as_i64()).unwrap_or(0)));
         }
         if rs.known_issues_checked_at.is_none() {
             warnings.push(concat!(
                 "🔴 **本车的故障模式从未查过**（档案里没有合法的 known_issues_checked_at 日期）",
-                "—— 同样是「没查」不是「没有」。查法：repairbench tool nhtsa.complaints"
+                "—— 同样是「没查」不是「没有」。查法：motomech tool nhtsa.complaints"
             ).to_string());
         }
         if hard_rules.is_empty() {

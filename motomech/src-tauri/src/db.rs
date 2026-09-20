@@ -1,6 +1,6 @@
 //! SQLite 索引 —— **可重建的缓存，不是真相源**
 //!
-//! 删掉 .index/repairbench.db 不丢任何数据，重跑 `repairbench index` 即可。
+//! 删掉 .index/motomech.db 不丢任何数据，重跑 `motomech index` 即可。
 //! 因此这里不存任何只在数据库里存在的内容：每一行都能从文件重新导出。
 
 use anyhow::{Context, Result};
@@ -38,7 +38,7 @@ fn migrate(conn: &Connection) -> Result<()> {
             anyhow::bail!(
                 "索引库 schema 版本不符：库是 v{v}，本程序需要 v{SCHEMA_VERSION}。\n\
                  索引是可重建的缓存，删掉重建即可（文件才是真相源）：\n\
-                   rm -rf <平台根>/.index && repairbench index --all"
+                   rm -rf <平台根>/.index && motomech index --all"
             );
         }
     }

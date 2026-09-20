@@ -1,17 +1,17 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-//! repairbench —— 一个二进制，四种模式（形态对齐 somadisk）
+//! motomech —— 一个二进制，四种模式（形态对齐 somadisk）
 //!
-//!   repairbench            启动桌面 App
-//!   repairbench serve      HTTP API（headless，给 soma 等 agent 调）
-//!   repairbench mcp        stdio MCP server（给 Claude Code / Hermes 调）
-//!   repairbench <子命令>    CLI
+//!   motomech            启动桌面 App
+//!   motomech serve      HTTP API（headless，给 soma 等 agent 调）
+//!   motomech mcp        stdio MCP server（给 Claude Code / Hermes 调）
+//!   motomech <子命令>    CLI
 //!
 //! 数据真相源始终是文件；SQLite 只是可重建索引。
 
 mod cli;
-use repairbench_lib::{db, index, platform};
+use motomech_lib::{db, index, platform};
 
 use anyhow::Result;
 use clap::Parser;
@@ -30,13 +30,13 @@ fn run(args: Cli) -> Result<()> {
     match args.command {
         // 无子命令 → 桌面 App
         None => {
-            repairbench_lib::run();
+            motomech_lib::run();
             Ok(())
         }
         Some(Commands::Safety { action, selftest }) => {
             let p = Platform::new(args.root.clone())?;
             if selftest {
-                let t = repairbench_lib::safety::selftest(&p, args.vehicle.as_deref())?;
+                let t = motomech_lib::safety::selftest(&p, args.vehicle.as_deref())?;
                 println!("门禁回归用例：{}/{} 通过", t.passed, t.total);
                 for f in &t.failures { println!("  ❌ {f}"); }
                 if t.failures.is_empty() { println!("✅ 既没漏拦，也没误报"); }
@@ -44,10 +44,10 @@ fn run(args: Cli) -> Result<()> {
                 return Ok(());
             }
             if action.trim().is_empty() {
-                anyhow::bail!("要判定什么动作？用法: repairbench safety \"打火试试\"  或  --selftest");
+                anyhow::bail!("要判定什么动作？用法: motomech safety \"打火试试\"  或  --selftest");
             }
-            let r = repairbench_lib::safety::evaluate(&p, args.vehicle.as_deref(), &action)?;
-            print!("{}", repairbench_lib::safety::render(&r));
+            let r = motomech_lib::safety::evaluate(&p, args.vehicle.as_deref(), &action)?;
+            print!("{}", motomech_lib::safety::render(&r));
             // BLOCK 时以非零退出码收场 —— 让脚本也能拦住，不只是人眼看
             if r.verdict == "BLOCK" { std::process::exit(2); }
             Ok(())
@@ -55,21 +55,21 @@ fn run(args: Cli) -> Result<()> {
         Some(Commands::Briefing { phase }) => {
             let p = Platform::new(args.root.clone())?;
             let ph = if phase.trim().is_empty() {
-                repairbench_lib::workbench::build(&p, args.vehicle.as_deref(), None)?.current_phase
+                motomech_lib::workbench::build(&p, args.vehicle.as_deref(), None)?.current_phase
             } else { phase };
-            print!("{}", repairbench_lib::safety::briefing(&p, &ph)?);
+            print!("{}", motomech_lib::safety::briefing(&p, &ph)?);
             Ok(())
         }
         Some(Commands::Parts { days_per_phase }) => {
             let p = Platform::new(args.root.clone())?;
-            let pp = repairbench_lib::parts::plan(&p, args.vehicle.as_deref(), days_per_phase)?;
-            print!("{}", repairbench_lib::parts::render(&pp));
+            let pp = motomech_lib::parts::plan(&p, args.vehicle.as_deref(), days_per_phase)?;
+            print!("{}", motomech_lib::parts::render(&pp));
             Ok(())
         }
         Some(Commands::Tool { id, args: kv }) => {
             let p = Platform::new(args.root.clone())?;
             if id.trim().is_empty() {
-                for t in repairbench_lib::tools::load(&p)? {
+                for t in motomech_lib::tools::load(&p)? {
                     let tag = if t.kind == "link" { "🔗 只能给链接" } else { "⚙️  可直接调用" };
                     println!("{tag}  [{}级] {}", t.source_level, t.id);
                     println!("      {}", t.desc);
@@ -84,14 +84,14 @@ fn run(args: Cli) -> Result<()> {
                     None => anyhow::bail!("参数要写成 k=v 的形式，收到「{a}」"),
                 }
             }
-            let r = repairbench_lib::tools::call(&p, &id, &m)?;
-            print!("{}", repairbench_lib::tools::render(&r));
+            let r = motomech_lib::tools::call(&p, &id, &m)?;
+            print!("{}", motomech_lib::tools::render(&r));
             Ok(())
         }
         Some(Commands::Scripts) => {
             let p = Platform::new(args.root.clone())?;
             println!("平台根 {}\n", p.root.display());
-            for s in repairbench_lib::tools::scripts(&p)? {
+            for s in motomech_lib::tools::scripts(&p)? {
                 println!("  {}", s.cmd);
                 if !s.desc.is_empty() { println!("      {}", s.desc); }
             }
@@ -100,60 +100,60 @@ fn run(args: Cli) -> Result<()> {
         }
         Some(Commands::Spec { query }) => {
             let p = Platform::new(args.root.clone())?;
-            let r = repairbench_lib::api::specs(&p, args.vehicle.as_deref(), &query)?;
+            let r = motomech_lib::api::specs(&p, args.vehicle.as_deref(), &query)?;
             println!("车辆: {}\n", r.vehicle);
-            println!("{}", repairbench_lib::api::render_specs(&r));
+            println!("{}", motomech_lib::api::render_specs(&r));
             Ok(())
         }
         Some(Commands::Acquire) => {
             let p = Platform::new(args.root.clone())?;
             let v = p.resolve_vehicle(args.vehicle.as_deref())?;
             println!("车辆：{}\n", v.id);
-            let a = repairbench_lib::acquire::build(&p, &v)?;
-            print!("{}", repairbench_lib::acquire::render(&a));
+            let a = motomech_lib::acquire::build(&p, &v)?;
+            print!("{}", motomech_lib::acquire::render(&a));
             Ok(())
         }
         Some(Commands::Script) => {
             let p = Platform::new(args.root.clone())?;
             let v = p.resolve_vehicle(args.vehicle.as_deref())?;
-            let r = repairbench_lib::script::check(&p, &v)?;
-            print!("{}", repairbench_lib::script::render(&r));
+            let r = motomech_lib::script::check(&p, &v)?;
+            print!("{}", motomech_lib::script::render(&r));
             Ok(())
         }
         Some(Commands::Circuit { query, all }) => {
             let p = Platform::new(args.root.clone())?;
             let v = p.resolve_vehicle(args.vehicle.as_deref())?;
             let q = if query.trim().is_empty() { None } else { Some(query.as_str()) };
-            let r = repairbench_lib::circuit::build(&p, &v, q, all)?;
-            print!("{}", repairbench_lib::circuit::render(&r));
+            let r = motomech_lib::circuit::build(&p, &v, q, all)?;
+            print!("{}", motomech_lib::circuit::render(&r));
             Ok(())
         }
         Some(Commands::Crossval) => {
             let p = Platform::new(args.root.clone())?;
             let v = p.resolve_vehicle(args.vehicle.as_deref())?;
             println!("车辆：{}\n", v.id);
-            let r = repairbench_lib::crossval::build(&p, &v)?;
-            print!("{}", repairbench_lib::crossval::render(&r));
+            let r = motomech_lib::crossval::build(&p, &v)?;
+            print!("{}", motomech_lib::crossval::render(&r));
             Ok(())
         }
         Some(Commands::Gaps) => {
             let p = Platform::new(args.root.clone())?;
-            let r = repairbench_lib::gaps::find(&p, args.vehicle.as_deref())?;
-            print!("{}", repairbench_lib::gaps::render(&r));
+            let r = motomech_lib::gaps::find(&p, args.vehicle.as_deref())?;
+            print!("{}", motomech_lib::gaps::render(&r));
             Ok(())
         }
         Some(Commands::Coldstart { vin, apply }) => {
             let p = Platform::new(args.root.clone())?;
             let c = if vin.trim().is_empty() {
-                repairbench_lib::coldstart::from_vehicle(&p, args.vehicle.as_deref(), apply)?
+                motomech_lib::coldstart::from_vehicle(&p, args.vehicle.as_deref(), apply)?
             } else {
-                repairbench_lib::coldstart::run(&p, &vin, apply)?
+                motomech_lib::coldstart::run(&p, &vin, apply)?
             };
-            print!("{}", repairbench_lib::coldstart::render(&c));
+            print!("{}", motomech_lib::coldstart::render(&c));
             Ok(())
         }
         Some(Commands::Research { cmd }) => {
-            use repairbench_lib::research as R;
+            use motomech_lib::research as R;
             let p = Platform::new(args.root.clone())?;
             let v = args.vehicle.as_deref();
             match cmd {
@@ -171,19 +171,19 @@ fn run(args: Cli) -> Result<()> {
         Some(Commands::Diag { tree }) => {
             let p = Platform::new(args.root.clone())?;
             if tree.trim().is_empty() {
-                for (id, sym) in repairbench_lib::diag::list(&p)? {
+                for (id, sym) in motomech_lib::diag::list(&p)? {
                     println!("  {id}\n    {sym}");
                 }
             } else {
-                print!("{}", repairbench_lib::diag::render(
-                    &repairbench_lib::diag::load(&p, args.vehicle.as_deref(), &tree)?));
+                print!("{}", motomech_lib::diag::render(
+                    &motomech_lib::diag::load(&p, args.vehicle.as_deref(), &tree)?));
             }
             Ok(())
         }
         Some(Commands::Symptom { text }) => {
             let p = Platform::new(args.root.clone())?;
-            print!("{}", repairbench_lib::symptom::render(
-                &repairbench_lib::symptom::diagnose(&p, args.vehicle.as_deref(), &text)?));
+            print!("{}", motomech_lib::symptom::render(
+                &motomech_lib::symptom::diagnose(&p, args.vehicle.as_deref(), &text)?));
             Ok(())
         }
         Some(Commands::Vehicles) => cmd_vehicles(args.root),
@@ -197,18 +197,18 @@ fn run(args: Cli) -> Result<()> {
         Some(Commands::Providers { set, no_probe }) => {
             let p = Platform::new(args.root.clone())?;
             if let Some(id) = set {
-                repairbench_lib::provider::set_default(&p.root, &id)?;
+                motomech_lib::provider::set_default(&p.root, &id)?;
                 println!("✅ 默认通道已改为 {id}");
             }
-            let (list, def) = repairbench_lib::provider::load(&p.root)?;
+            let (list, def) = motomech_lib::provider::load(&p.root)?;
             if no_probe {
                 for x in &list {
                     println!("{} {:<12} [{}] {}", if x.id == def { "→" } else { " " },
                              x.id, x.kind, x.model.as_deref().unwrap_or("(未指定)"));
                 }
             } else {
-                let h = repairbench_lib::provider::health(&list);
-                print!("{}", repairbench_lib::provider::render_health(&h, &def));
+                let h = motomech_lib::provider::health(&list);
+                print!("{}", motomech_lib::provider::render_health(&h, &def));
             }
             Ok(())
         }
@@ -343,7 +343,7 @@ fn cmd_doctor(root: Option<String>, vehicle: Option<&str>) -> Result<()> {
                     println!("索引新鲜度 : ✅ {} 个源文件均不比索引新（索引建于 {}）",
                              paths.len(), built_dt.with_timezone(&chrono::Local).format("%m-%d %H:%M:%S%.3f"));
                 } else {
-                    println!("索引新鲜度 : ⚠️  {}/{} 处陈旧（跑 `repairbench index --all` 重建）",
+                    println!("索引新鲜度 : ⚠️  {}/{} 处陈旧（跑 `motomech index --all` 重建）",
                              stale.len(), paths.len());
                     for x in &stale { println!("    · {x}"); }
                 }
@@ -384,7 +384,7 @@ fn cmd_doctor(root: Option<String>, vehicle: Option<&str>) -> Result<()> {
                     "SELECT excludes_fp FROM vehicles WHERE id=?1", [&v.id], |r| r.get(0)).ok();
                 match have {
                     Some(h) if h == want => println!("\n适用性规则  ✅ 与 VEHICLE.yml 一致"),
-                    Some(_) => println!("\n适用性规则  ⚠️ **已过期** —— VEHICLE.yml 的排除项改过但未重新索引\n            过滤结果仍是旧的，跑 `repairbench index --all` 更新"),
+                    Some(_) => println!("\n适用性规则  ⚠️ **已过期** —— VEHICLE.yml 的排除项改过但未重新索引\n            过滤结果仍是旧的，跑 `motomech index --all` 更新"),
                     None => println!("\n适用性规则  ⚠️ 未记录指纹（该车尚未索引）"),
                 }
             }
@@ -447,10 +447,10 @@ fn cmd_search(root: Option<String>, vehicle: Option<&str>, query: &str,
     // 全部委派给 api 层 —— CLI 此前有自己一套检索实现，
     // 那正是「同一查询三条通道说法不同」的根源（监工 2026-09-14-b / 09-15）。
     let p = Platform::new(root)?;
-    let r = repairbench_lib::api::manual_search_full(
+    let r = motomech_lib::api::manual_search_full(
         &p, vehicle, query, limit as i64, include_low_tier, include_inapplicable)?;
     println!("车辆: {}\n检索: {}\n", r.vehicle, r.query);
-    print!("{}", repairbench_lib::api::render_search(&r));
+    print!("{}", motomech_lib::api::render_search(&r));
     println!();
     Ok(())
 }
@@ -460,7 +460,7 @@ fn cmd_serve(root: Option<String>, host: String, port: u16) -> Result<()> {
     let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
     rt.block_on(async move {
         use axum::{extract::Query, routing::{get, post}, Json, Router};
-        use repairbench_lib::{api, parts, safety, workbench};
+        use motomech_lib::{api, parts, safety, workbench};
         use std::collections::HashMap;
 
         let root_s = p.root.display().to_string();
@@ -571,7 +571,7 @@ fn cmd_serve(root: Option<String>, host: String, port: u16) -> Result<()> {
         let r = root_s.clone();
         app = app.route("/v1/gaps", get(move |q: Query<HashMap<String,String>>| {
             let r = r.clone();
-            async move { let pf = pf!(r); reply!(repairbench_lib::gaps::find(&pf, v(&q))) }
+            async move { let pf = pf!(r); reply!(motomech_lib::gaps::find(&pf, v(&q))) }
         }));
 
         let r = root_s.clone();
@@ -580,7 +580,7 @@ fn cmd_serve(root: Option<String>, host: String, port: u16) -> Result<()> {
             async move {
                 let pf = pf!(r);
                 let t = q.get("text").map(|s| s.as_str()).unwrap_or("");
-                reply!(repairbench_lib::symptom::diagnose(&pf, v(&q), t))
+                reply!(motomech_lib::symptom::diagnose(&pf, v(&q), t))
             }
         }));
 
@@ -590,8 +590,8 @@ fn cmd_serve(root: Option<String>, host: String, port: u16) -> Result<()> {
             async move {
                 let pf = pf!(r);
                 match q.get("tree").map(|s| s.as_str()).filter(|s| !s.is_empty()) {
-                    Some(t) => reply!(repairbench_lib::diag::load(&pf, v(&q), t)),
-                    None => reply!(repairbench_lib::diag::list(&pf)),
+                    Some(t) => reply!(motomech_lib::diag::load(&pf, v(&q), t)),
+                    None => reply!(motomech_lib::diag::list(&pf)),
                 }
             }
         }));
@@ -684,7 +684,7 @@ fn cmd_serve(root: Option<String>, host: String, port: u16) -> Result<()> {
                 let all = q.get("all").map(|s| s == "true" || s == "1").unwrap_or(false);
                 let qq = q.get("query").map(|s| s.as_str()).filter(|s| !s.trim().is_empty());
                 reply!(pf.resolve_vehicle(v(&q))
-                    .and_then(|veh| repairbench_lib::circuit::build(&pf, &veh, qq, all)))
+                    .and_then(|veh| motomech_lib::circuit::build(&pf, &veh, qq, all)))
             }
         }));
 
@@ -694,7 +694,7 @@ fn cmd_serve(root: Option<String>, host: String, port: u16) -> Result<()> {
             async move {
                 let pf = pf!(r);
                 reply!(pf.resolve_vehicle(v(&q))
-                    .and_then(|veh| repairbench_lib::crossval::build(&pf, &veh)))
+                    .and_then(|veh| motomech_lib::crossval::build(&pf, &veh)))
             }
         }));
 
@@ -704,7 +704,7 @@ fn cmd_serve(root: Option<String>, host: String, port: u16) -> Result<()> {
             async move {
                 let pf = pf!(r);
                 reply!(pf.resolve_vehicle(v(&q))
-                    .and_then(|veh| repairbench_lib::script::check(&pf, &veh)))
+                    .and_then(|veh| motomech_lib::script::check(&pf, &veh)))
             }
         }));
 
@@ -714,14 +714,14 @@ fn cmd_serve(root: Option<String>, host: String, port: u16) -> Result<()> {
             async move {
                 let pf = pf!(r);
                 reply!(pf.resolve_vehicle(v(&q))
-                    .and_then(|veh| repairbench_lib::acquire::build(&pf, &veh)))
+                    .and_then(|veh| motomech_lib::acquire::build(&pf, &veh)))
             }
         }));
 
         // ── 手机直采（Tailscale 直连）──────────────────────────────
         // 进程仍只绑 127.0.0.1；对外由 `tailscale serve --bg <port>` 代理，
         // 访问控制交给 Tailscale ACL，本程序不自己发明认证。
-        use repairbench_lib::capture;
+        use motomech_lib::capture;
         let r = root_s.clone();
         app = app.route("/capture", get(move |q: Query<HashMap<String,String>>| {
             let r = r.clone();
@@ -826,7 +826,7 @@ fn cmd_serve(root: Option<String>, host: String, port: u16) -> Result<()> {
 fn cmd_workbench(root: Option<String>, vehicle: Option<&str>, phase: Option<&str>,
                  json: bool) -> Result<()> {
     let p = Platform::new(root)?;
-    let w = repairbench_lib::workbench::build(&p, vehicle, phase)?;
+    let w = motomech_lib::workbench::build(&p, vehicle, phase)?;
     if json {
         println!("{}", serde_json::to_string_pretty(&w)?);
         return Ok(());
@@ -892,7 +892,7 @@ fn tower_http_cors() -> tower_http::cors::CorsLayer {
 
 fn cmd_providers(root: Option<String>) -> Result<()> {
     let p = Platform::new(root)?;
-    let (list, default) = repairbench_lib::provider::load(&p.root)?;
+    let (list, default) = motomech_lib::provider::load(&p.root)?;
     println!("配置文件 {}\n", p.root.join("providers.yml").display());
     for pr in &list {
         let mark = if pr.id == default { "★" } else { " " };
@@ -908,7 +908,7 @@ fn cmd_providers(root: Option<String>) -> Result<()> {
 /// **只注入 A/B 级规格**（来自 specs_usable 视图），C/D 级永远不会进提示词 ——
 /// 模型看不到的东西，就不可能把它当成依据说出来。
 fn build_system_prompt(p: &Platform, vehicle: Option<&str>) -> Result<String> {
-    let w = repairbench_lib::workbench::build(p, vehicle, None)?;
+    let w = motomech_lib::workbench::build(p, vehicle, None)?;
     let v = p.resolve_vehicle(vehicle)?;
     let conn = db::open(&p.index_db())?;
 
@@ -967,13 +967,13 @@ fn cmd_ask(root: Option<String>, vehicle: Option<&str>, question: &str,
     // 走 RAG 问答模块:事实层(已核实,带出处,不经模型)+ 生成层分开,
     // 无相关事实时不调模型编答案。这是阶段 3「整包灌上下文」写法的升级。
     let p = Platform::new(root)?;
-    let r = repairbench_lib::ask::ask(&p, vehicle, question, provider)?;
-    print!("{}", repairbench_lib::ask::render(&r));
+    let r = motomech_lib::ask::ask(&p, vehicle, question, provider)?;
+    print!("{}", motomech_lib::ask::render(&r));
     Ok(())
 }
 
 fn cmd_mcp(root: Option<String>) -> Result<()> {
-    repairbench_lib::mcp::serve(root)
+    motomech_lib::mcp::serve(root)
 }
 
 fn yn(b: bool) -> &'static str { if b { "✅" } else { "—" } }

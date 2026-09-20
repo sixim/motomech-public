@@ -339,7 +339,7 @@ pub fn build(p: &Platform, v: &Vehicle) -> Result<Acquire> {
         "① 用上面的书目/链接确认该买或该借哪一本 —— 买之前核对它的适用年份明确包含本车".to_string(),
         "② 拿到实体书后翻拍：bash tools/snap.sh -b（翻拍台模式）".to_string(),
         "③ OCR 进库：bash tools/bookproc.sh —— 这是手册内容进库的唯一合法路径".to_string(),
-        "④ repairbench index --all，然后 repairbench gaps 看还缺什么".to_string(),
+        "④ motomech index --all，然后 motomech gaps 看还缺什么".to_string(),
     ];
 
     Ok(Acquire { make, model, year, already_have, queries_tried: tried, books, leads, diagrams, verdict, notes, next_steps })

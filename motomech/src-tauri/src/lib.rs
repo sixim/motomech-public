@@ -1,4 +1,4 @@
-//! repairbench —— 维修助理平台
+//! motomech —— 维修助理平台
 //!
 //! 模块定义在 lib crate，让 Tauri 前端命令与 CLI 共用同一套数据层。
 

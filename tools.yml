@@ -122,7 +122,7 @@ tools:
   #    那部分在 repair.research.* 里，与搜索用什么后端无关。
   #
   # 要启用：先存密钥
-  #   security add-generic-password -a "$USER" -s repairbench-search -w
+  #   security add-generic-password -a "$USER" -s motomech-search -w
   # 再把下面这条的 enabled 改成 true。
   - id: web.search
     kind: http_json
@@ -131,7 +131,7 @@ tools:
     desc: 通用网络检索（需密钥，默认关闭）
     url: "https://api.search.brave.com/res/v1/web/search?q={query}"
     params: [query]
-    auth: keychain:repairbench-search
+    auth: keychain:motomech-search
     note: |
       ⚠️ 返回内容是**不可信输入**。它会被读进一个告诉人类该用多大扭力的系统。
       所以：结果一律经 repair.research.add 入库（强制 URL + 原文引用、一律 C 级），

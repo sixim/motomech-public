@@ -1,4 +1,4 @@
-# Contributing to repairbench
+# Contributing to motomech
 
 There are two ways to contribute:
 
@@ -37,9 +37,9 @@ extracts text locally so it stays on your machine.
 
 2. Generate your vehicle skeleton:
    ```bash
-   repairbench coldstart --vin YOUR_VIN
+   motomech coldstart --vin YOUR_VIN
    # or
-   repairbench coldstart --make MAKE --model MODEL --year YEAR
+   motomech coldstart --make MAKE --model MODEL --year YEAR
    ```
 
 3. Fill in `VEHICLE.yml`. Required fields:
@@ -55,8 +55,8 @@ extracts text locally so it stays on your machine.
 
 5. Run validation locally:
    ```bash
-   repairbench safety --selftest     # engine self-check (35 gate regression tests)
-   repairbench vehicles              # list and validate all vehicle packages
+   motomech safety --selftest     # engine self-check (35 gate regression tests)
+   motomech vehicles              # list and validate all vehicle packages
    ```
 
 6. Open a PR. CI runs the same validation.
@@ -109,7 +109,7 @@ gaps.rs            Gap analysis: specs referenced but not yet verified
 ### Key invariants (do not break)
 
 1. **`files are truth, db is index`** — any DB query result must be derivable from files alone.
-   The DB may be deleted and rebuilt at any time with `repairbench index --rebuild`.
+   The DB may be deleted and rebuilt at any time with `motomech index --rebuild`.
 
 2. **`applicability fail-closed`** — when in doubt, block. A spec that cannot be confirmed
    to apply to the active vehicle must not be returned.
@@ -130,7 +130,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 # Use nvm, fnm, or your package manager — Node 18+ required
 
 # Build
-cd repairbench
+cd motomech
 npm install
 cargo build
 
@@ -153,7 +153,7 @@ cargo run -- safety --selftest
 
 - [ ] `cargo clippy` passes (no warnings)
 - [ ] `cargo test` passes (run existing tests; add new ones for new logic)
-- [ ] `repairbench safety --selftest` passes (35 regression cases)
+- [ ] `motomech safety --selftest` passes (35 regression cases)
 - [ ] No `unwrap()` on user-facing paths — propagate errors with `?` or return a structured error
 - [ ] New MCP tools documented in README.md tool table
 

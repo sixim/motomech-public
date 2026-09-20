@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "repairbench",
+    name = "motomech",
     version,
     about = "维修助理 —— 手册知识库 · 诊断 · 作业单 · MCP/HTTP 接口",
     long_about = "不带子命令时启动桌面 App。\n\n\
@@ -194,7 +194,7 @@ pub enum Commands {
 pub enum ResearchCmd {
     /// 把一条差距变成检索提纲：要什么、什么算数、什么不算
     Brief {
-        /// 差距 id，见 `repairbench gaps`
+        /// 差距 id，见 `motomech gaps`
         gap_id: String,
     },
     /// 收一条线索 —— **必须带 URL 与原文引用**

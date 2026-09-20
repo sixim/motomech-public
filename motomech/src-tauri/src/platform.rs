@@ -29,7 +29,7 @@ impl Platform {
     }
 
     pub fn vehicles_dir(&self) -> PathBuf { self.root.join("vehicles") }
-    pub fn index_db(&self) -> PathBuf { self.root.join(".index").join("repairbench.db") }
+    pub fn index_db(&self) -> PathBuf { self.root.join(".index").join("motomech.db") }
     fn current_file(&self) -> PathBuf { self.root.join(".current-vehicle") }
 
     pub fn list_vehicles(&self) -> Result<Vec<String>> {

@@ -2,9 +2,9 @@
 .index/
 
 # ── Build artifacts ──
-repairbench/node_modules/
-repairbench/dist/
-repairbench/src-tauri/target/
+motomech/node_modules/
+motomech/dist/
+motomech/src-tauri/target/
 bin/
 
 # ── Manual content (copyright — stays local, rebuilt from your PDF) ──
@@ -19,7 +19,7 @@ bin/
 vehicles/*/30_诊断扫描/scans/
 
 # ── Personal config (user-specific paths) ──
-knowledge/com.simon.repairbench.serve.plist
+knowledge/com.simon.motomech.serve.plist
 tools/sync-server.sh
 
 # ── Runtime state ──
