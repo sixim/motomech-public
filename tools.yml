@@ -1,0 +1,138 @@
+# 外部工具注册表 —— 声明式，不写代码
+#
+# 两类，**必须分清**：
+#   kind: http_json   机器能调，返回结构化数据
+#   kind: link        机器调不了（对方是网页/无公开 API），只能生成 URL 给人去点
+#
+# 把 link 类伪装成 http_json 是最坏的做法 —— 调用方以为拿到了数据，
+# 实际上什么也没查。RealOEM 就属于 link 类：它是图形 fiche，没有公开 API。
+#
+# 每个工具必须声明 source_level：它返回的东西算几级。
+# 这样「接入任何 API」不会污染准确性机制 ——
+# 官方零件库返回的件号是 A 级，论坛搜来的是 C 级，两者永远不会被混为一谈。
+#
+# 密钥：写 `auth: keychain:<服务名>`，调用时从 macOS 钥匙串现取，
+# **绝不写进本文件，也绝不出现在日志或返回值里**。
+
+version: 1
+
+tools:
+  # ── 能调的 ──────────────────────────────────────
+  - id: nhtsa.vin_decode
+    kind: http_json
+    source_level: A
+    desc: 按 VIN 解码车辆身份（年份/车型/发动机/产地）。这是车辆身份的权威来源
+    url: "https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/{vin}?format=json"
+    params: [vin]
+    note: |
+      2026-09-14 正是这个接口把本项目的车型判错纠正过来的
+      （档案写 2010 camhead，实际是 2009 hexhead）。
+      返回里的 ErrorText 要看：「Check Digit is correct」才说明 VIN 没录错。
+
+  - id: nhtsa.recalls
+    kind: http_json
+    source_level: A
+    desc: 查某年某车型的官方召回
+    url: "https://api.nhtsa.gov/recalls/recallsByVehicle?make={make}&model={model}&modelYear={year}"
+    params: [make, model, year]
+    note: |
+      ⚠️ 两个坑：
+      ① 车型名写法不同返回的集合不同 —— "R 1200 GS"（带空格）与 "R1200 GS" 都要查再去重
+      ② 年份差一年，结果就不同。本车按 2010 查会漏掉 10V276000（前刹车油管，致命级）
+
+  - id: nhtsa.models
+    kind: http_json
+    source_level: A
+    desc: 官方车型词表 —— 「这台车在 NHTSA 里叫什么名字」。召回/投诉查不到时先问它
+    url: "https://vpic.nhtsa.dot.gov/api/vehicles/GetModelsForMakeYear/make/{make}/modelyear/{year}?format=json"
+    params: [make, year]
+    note: |
+      ⚠️ **这是防假绿灯的关键一环,不是可选项。**
+      2026-09-16 实测:Ducati GT1000 用四种写法查召回全返回 0 条,
+      而词表显示 Ducati 2008 只有 9 个名字,GT1000 其实登记在「Classic」名下。
+      也就是说「0 条召回」真正的含义是「词表里没这个名字」,不是「这台车没召回」。
+      对比 BMW 2009 有 45 个名字且含「R 1200 GS」—— 本车能查到纯属名字碰巧在表里。
+
+  - id: openlibrary.manuals
+    kind: http_json
+    source_level: B
+    desc: 书目检索 —— 查「有没有出版社为这台车出过维修手册」(书名/出版社/年份/ISBN)
+    url: "https://openlibrary.org/search.json?q={q}&limit=8&fields=title,author_name,first_publish_year,isbn,publisher,number_of_pages_median,ebook_access,lending_edition_s"
+    params: [q]
+    note: |
+      图书馆书目数据,B 级(权威三方)。**它只告诉你书存不存在,不提供书的内容。**
+      查到了 = 知道该买/借哪本;查不到 = 没有出版社做过这台车,这个结论本身有价值。
+      2026-09-16 实测:「ducati motorcycle repair manual」→ 6 条(含 Haynes 748/916/996);
+      「ducati GT1000 manual」→ **0 条**(Haynes/Clymer 确实没做过 SportClassic)。
+      手册内容进库的唯一合法路径仍是实体扫描 + OCR(bookproc.sh)。
+      ebook_access 字段说明该书有无合法电子借阅:
+      public(公有域可直接读)/ borrowable(可在线借)/ printdisabled / no_ebook(只能买纸质)。
+      2026-09-16 实测:Haynes 的 Ducati 2-valve V-Twins 两本均为 no_ebook。
+
+  - id: nhtsa.complaints
+    kind: http_json
+    source_level: A
+    desc: 查某年某车型的车主投诉（故障模式的第一手来源）
+    url: "https://api.nhtsa.gov/complaints/complaintsByVehicle?make={make}&model={model}&modelYear={year}"
+    params: [make, model, year]
+    note: "⚠️ Count 字段恒报 0，但 results 有数据 —— 只看 Count 会误判「无投诉」"
+
+  # ── 调不了的，只能给链接 ────────────────────────
+  - id: realoem.fiche
+    kind: link
+    source_level: A
+    desc: RealOEM 零件图（按 VIN 查本车精确配置的件号）
+    url: "https://www.realoem.com/bikes/catalog?vin={vin}"
+    params: [vin]
+    note: |
+      **没有公开 API，只能人去点。** 它是图形 fiche，件号要从零件图上读。
+      返回的件号是 A 级（官方零件库），但必须人工誊录 ——
+      誊错一位就是错件，所以誊完请回图核对一次。
+
+  - id: maxbmw.fiche
+    kind: link
+    source_level: A
+    desc: MAX BMW 零件图（另一个 fiche，有时比 RealOEM 好查）
+    url: "https://www.maxbmwmotorcycles.com/fiche/search?q={query}"
+    params: [query]
+
+  - id: advrider.search
+    kind: link
+    source_level: C
+    desc: ADVrider 论坛检索（社区经验，C 级，绝不进作业单）
+    url: "https://www.google.com/search?q=site%3Aadvrider.com+{query}"
+    params: [query]
+    note: "论坛内容是 C 级。可作交叉参考、可指路，但不作为数值依据"
+
+  - id: ibmwr.search
+    kind: link
+    source_level: C
+    desc: IBMWR / hexhead 相关社区检索
+    url: "https://www.google.com/search?q={query}+R1200GS+hexhead"
+    params: [query]
+
+  # ── 网络检索：留了接口，但**默认不开** ──────────────
+  #
+  # 为什么不直接内置一个搜索 API：
+  # ① 需要密钥。按项目安全规则，密钥走 macOS 钥匙串，绝不写进文件 ——
+  #    所以这里只能写 `auth: keychain:<名>`，由用户自己存。
+  # ② 更要紧的是，**app 自己搜不搜并不重要**。搜索谁都能做
+  #    （Claude / Hermes / soma / 将来的 API key），
+  #    app 要做的是纪律层：拿回来的东西怎么归档、算几级、能不能进作业单。
+  #    那部分在 repair.research.* 里，与搜索用什么后端无关。
+  #
+  # 要启用：先存密钥
+  #   security add-generic-password -a "$USER" -s repairbench-search -w
+  # 再把下面这条的 enabled 改成 true。
+  - id: web.search
+    kind: http_json
+    enabled: false
+    source_level: C          # 网上来的永远是 C，不因为「看起来官方」就升级
+    desc: 通用网络检索（需密钥，默认关闭）
+    url: "https://api.search.brave.com/res/v1/web/search?q={query}"
+    params: [query]
+    auth: keychain:repairbench-search
+    note: |
+      ⚠️ 返回内容是**不可信输入**。它会被读进一个告诉人类该用多大扭力的系统。
+      所以：结果一律经 repair.research.add 入库（强制 URL + 原文引用、一律 C 级），
+      绝不直接写进 specs。渲染时标注为数据而非指令。

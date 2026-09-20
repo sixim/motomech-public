@@ -1,0 +1,51 @@
+# 排查树 —— 声明式，与门禁规则表同源思路
+#
+# 每棵树回答一个「症状 → 怎么定位到具体原因」。它填的是 known_issues(会怎么坏)
+# 和 spec(数值)之间那一环:可执行的定位流程。
+#
+# 三条纪律(前四轮监工换来的):
+# 1. 每个数值判据必须有 basis:出处。引用已核实规格写 spec:<canonical>,
+#    引用手册写 "B｜Haynes p...";凭经验的判据不许进树。
+# 2. 判据里的具体数字如果来自已核实规格,渲染时会被实际值替换 ——
+#    树不重复抄数字,避免和规格库不一致。
+# 3. 走到「拆/换」这类动作,step 标 gated:true,取树时会过安全门禁。
+
+id: charging-system
+symptom: "电瓶反复亏电 / 仪表电压低 / 骑行中电量下降"
+applies_to_generations: [hexhead]     # 本树的判据出自 hexhead 手册
+severity: 卡关键路径
+related_issues: ["fuel strip 失效会耗电但不是充电故障 —— 先分清"]
+
+steps:
+  - id: battery-rest-voltage
+    check: "静置电瓶开路电压(熄火、静置数小时后量端子)"
+    expect: ">= 12.8V 为充满"
+    basis: "B｜Haynes 4598 p7•? Section 4「should indicate 12.8 volts or more when fully charged」"
+    if_fail: "电压明显低 → 先充电再测;充不进或充满很快掉 → 电瓶本身坏(见 next: battery-health)"
+    if_pass: "电瓶基础 OK,转查充电系统 → next: charging-under-load"
+
+  - id: battery-health
+    check: "充电后静置,看掉电速率"
+    expect: "好电瓶每天自放电约 1%"
+    basis: "B｜Haynes 4598 Section 4「A good battery will tend to lose its charge at about 1% per day」"
+    if_fail: "掉电远快于 1%/天 且断开负载仍掉 → 电瓶内部短路/硫化,换新"
+    conclusion_on_fail: "电瓶报废"
+
+  - id: charging-under-load
+    check: "着车后量电瓶端子电压(充电系统输出测试)"
+    expect: "运转时应高于静置电压(说明在充电);若骑行中反而掉 → 充电系统故障"
+    basis: "B｜Haynes 4598 Section 4「If the battery discharges while the machine is in regular use, either the battery is faulty or the charging system is defective. Refer to Section 27」"
+    next: charging-output-test
+    gated: false
+
+  - id: charging-output-test
+    check: "按 Section 27 做充电系统输出测试(发电机三相/稳压整流)"
+    expect: "输出符合规格"
+    basis: "spec:alternator_max_output_w"      # 引用已核实:2008-on GS = 720W
+    note: "发电机是三相交流+集成稳压整流(spec:alternator_type)。测试细节在 Haynes 7章 Section 27"
+    conclusion_on_fail: "充电系统(发电机或稳压整流)故障"
+
+# 与本车已知故障的关联:充电异常 vs fuel strip 耗电
+cross_check:
+  - "本车 fuel strip 是最高频故障,但它是**燃油表**问题不是充电问题。
+     若同时有燃油表乱跳,别混为一谈 —— 分开走各自的树。"

@@ -1,0 +1,30 @@
+# ── Rebuildable indexes ──
+.index/
+
+# ── Build artifacts ──
+repairbench/node_modules/
+repairbench/dist/
+repairbench/src-tauri/target/
+bin/
+
+# ── Manual content (copyright — stays local, rebuilt from your PDF) ──
+**/pages/*.jpg
+**/pages/*.md
+**/.ocr/
+**/raw/
+**/*.pdf
+**/*.txt
+
+# ── Scan data ──
+vehicles/*/30_诊断扫描/scans/
+
+# ── Personal config (user-specific paths) ──
+knowledge/com.simon.repairbench.serve.plist
+tools/sync-server.sh
+
+# ── Runtime state ──
+.current-vehicle
+logs/
+
+# ── macOS ──
+.DS_Store

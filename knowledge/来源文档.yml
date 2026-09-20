@@ -1,0 +1,44 @@
+# 来源文档登记表 —— 交叉验证判「独立性」的唯一依据
+#
+# ── 为什么必须显式登记,不能从出处文字里猜 ────────────────────
+# 2026-09-19 监工实测:靠「取第一个≥3字母的词」来认文档,同一本 Haynes 4598
+# 会被认成 5 个不同来源：
+#     Haynes 4598 · Torque settings → haynes
+#     BMW R1200 Twins (Haynes 4598) → bmw
+#     See Haynes 4598 p22           → see        ← 停用词被当成出版方
+#     4598 手册 p22                  → 4598
+#     海恩斯 4598                     → 海恩斯
+# 后果:同一本书的两条记录会被算成「两个独立来源互相印证」,
+# 于是作业单上那条「⚠️ 安全关键·单来源」**静悄悄消失** —— 假绿灯。
+#
+# ── fail-closed 规则 ────────────────────────────────────────
+# 出处匹配不上任何已登记文档 → **不产生新的独立来源**,全部归入 `unknown` 一个桶,
+# 并在报告里列出来要求登记。宁可少算独立性(多报单来源),不可多算。
+# 少算的代价是多看一行提示;多算的代价是该警告的地方不警告。
+
+documents:
+  - id: haynes-4598
+    name: "Haynes 4598《BMW R1200 Twins '04 to '09》"
+    level: B
+    # 任一 match 串(归一化后)出现在出处里即判定为本文档
+    match:
+      - "haynes4598"
+      - "haynes"          # 本项目目前只有这一本 Haynes;将来引入第二本必须细化
+      - "海恩斯"
+      - "r1200twins"
+      - "4598"
+
+  - id: nhtsa
+    name: "NHTSA 官方数据库(召回/投诉/词表)"
+    level: A
+    match: ["nhtsa", "召回", "投诉"]
+
+  - id: bmw-reprom
+    name: "BMW RepROM / 官方维修资料"
+    level: A
+    match: ["reprom", "bmw官方", "bmwofficial"]
+
+  - id: bmw-riders-manual
+    name: "BMW 车主手册"
+    level: A
+    match: ["ridersmanual", "车主手册"]

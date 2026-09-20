@@ -1,0 +1,30 @@
+id: final-drive
+symptom: "后轮异响 / 行驶中后部摆动 / 终传渗油 / 换油见金属屑"
+applies_to_generations: [hexhead]
+severity: 安全关键
+related_issues:
+  - "2009 NHTSA 投诉:终传轴承失效多起,含 60mph 行驶中 crown bearing 脱开"
+  - "这是本车已知故障焦点 —— 别当小毛病"
+steps:
+  - id: drain-oil-inspect
+    check: "放终传油,用白色容器接,铺白纸过滤看残留"
+    expect: "无金属屑;油量放出接近加注量说明没大量渗漏"
+    basis: "spec:final_drive_oil_capacity"
+    if_fail: "见金属屑 → 轴承已在磨损,不要再骑,拆检终传;油量远少于加注量 → 已渗漏"
+    if_pass: "转查轴承旷量 → next: bearing-play"
+    gated: true
+  - id: bearing-play
+    check: "抓后轮上下 / 左右摇,感受终传/轮轴旷量"
+    expect: "无可感旷量"
+    basis: "B｜Haynes 4598 Ch4 Section 11 Swingarm and driveshaft"
+    if_fail: "有旷量 → crown bearing 磨损,拆检更换(专用工具)"
+    conclusion_on_fail: "终传 crown bearing 磨损/失效"
+    gated: true
+  - id: refill-torque
+    check: "复装后按规格拧终传油螺塞、Paralever 安装螺栓"
+    expect: "扭力到位"
+    basis: "spec:final_drive_oil_plugs"
+    note: "Paralever 安装螺栓:前 spec、后 spec(见 torque_chassis_4_2);终传枢轴 100 Nm"
+    gated: true
+cross_check:
+  - "终传油容量 0.22L,别按网传 180ml 加 —— 少 40ml 会加剧轴承磨损"

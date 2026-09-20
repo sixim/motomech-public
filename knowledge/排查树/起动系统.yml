@@ -1,0 +1,75 @@
+# 排查树 —— 起动系统
+#
+# 这棵树的价值在于**先分岔**：「不着车」其实是三个完全不同的故障族，
+# 混在一起查会来回空转：
+#   A 按起动键**毫无反应**      → 供电/安全联锁/起动继电器
+#   B 起动机**转但转不动/很慢**  → 电瓶容量、线路压降、机械阻力
+#   C 转得**很欢但不着火**       → 点火或燃油（转去对应的树）
+# 先把人放到正确的分支上，比给一堆测量点有用。
+
+id: starting-system
+symptom: "按起动键没反应 / 起动机转不动 / 转得很欢但不着火 / 打不着车"
+applies_to_generations: [hexhead]
+severity: 卡关键路径
+related_issues:
+  - "本车停放十年：电瓶必然报废（已在采购清单里），但**别假设只有电瓶** —— 安全联锁和继电器同样常见"
+  - "fuel strip 失效不会导致打不着，但会让你误判为没油 —— 见 fuel-level 树"
+
+cross_check:
+  - "先确认 P3 已完成（电气复活与故障码基线）。跳过 P3 直接打火，等于把故障码基线毁掉 —— 那是整套流程里最有价值的一步"
+
+steps:
+  # ── 分岔 ──
+  - id: triage
+    check: "按起动键，听/看发生了什么"
+    expect: "把症状归到三类之一"
+    basis: "分岔逻辑，不是数值判据"
+    if_fail: "毫无反应（连继电器咔哒声都没有）→ next: power-at-battery"
+    if_pass: "起动机转 → 转得慢/费力 → next: crank-voltage ；转得欢但不着火 → 走 ignition-system 树或燃油树"
+    next: power-at-battery
+    note: "这一步不用工具。**先分对岔**再拿万用表，否则会在错的分支上量半天"
+
+  # ── A 支：毫无反应 ──
+  - id: power-at-battery
+    check: "万用表直流档，量电瓶两端电压（静置）"
+    expect: "spec:electrical_system.battery 是本车电瓶规格；满电静置应 ≥12.8V"
+    basis: "spec:electrical_system.battery"
+    if_fail: "明显低于 12V → 先充电/换电瓶再往下查，低压会制造一堆假故障"
+    if_pass: "电压正常 → next: safety-interlocks"
+    note: "量的是**电瓶端子本身**，不是线束上。端子腐蚀会让表上好看、实际带不动负载"
+
+  - id: safety-interlocks
+    check: "逐个试安全联锁：边撑收起、离合器握死、空挡、急停开关置 RUN"
+    expect: "任一联锁未满足都会让起动电路断开 —— 这是设计，不是故障"
+    basis: "circuit:267"
+    if_fail: "某个联锁位置变化时行为不同 → 该联锁开关或其线路故障"
+    if_pass: "联锁都满足仍无反应 → next: starter-relay"
+    note: "边撑开关是本车图上明确画出的（Sidestand switch）。停放十年的车，边撑开关触点氧化很常见"
+
+  - id: starter-relay
+    check: "按起动键时听起动继电器有无咔哒声；有条件直接量继电器控制端有无电压"
+    expect: "有咔哒 = 控制回路通，问题在主回路/起动机；无咔哒 = 控制回路断"
+    basis: "circuit:267"
+    if_fail: "无咔哒且联锁都正常 → 控制回路断：保险丝、点火开关、起动按钮、继电器本身"
+    if_pass: "有咔哒但起动机不动 → 主回路：电瓶正极粗线、起动机接地、起动机本身"
+    note: "本车是电子保险丝（ZFE 管理），不是传统插片保险丝 —— 别去找保险丝盒里烧断的那片"
+
+  # ── B 支：转但转不动 ──
+  - id: crank-voltage
+    check: "起动过程中量电瓶端子电压（动态压降）"
+    expect: "起动瞬间电压不应崩到过低；崩得厉害说明电瓶带不动或线路压降大"
+    basis: "spec:electrical_system.battery"
+    if_fail: "电压崩得很低 → 电瓶容量不足（停放十年几乎必然）或正负极粗线/接地不良"
+    if_pass: "电压尚可但仍转不动 → 机械阻力：转去 P2「发动机能否自由转动」，别硬起动"
+    note: "⚠️ 停放十年的车，**转不动优先怀疑机械卡滞**而不是电气。硬起动可能弯连杆"
+    gated: true
+
+  # ── C 支：转得欢但不着火 ──
+  - id: spark-or-fuel
+    check: "分清是没火还是没油：拆一个火花塞看是否潮湿有汽油味"
+    expect: "干燥无味 → 燃油没到；潮湿有味 → 燃油到了，查点火"
+    basis: "B｜Haynes 4598 第 1 章 火花塞检查"
+    if_fail: "干燥 → 走燃油系统（P4）：油泵、滤网、喷油嘴、油管快接头 O 环"
+    if_pass: "潮湿 → 走 ignition-system 树"
+    note: "本车是**双火花塞**（每缸主/副各一），拆的是主塞还是副塞要记清楚 —— 扭力值也不同"
+    gated: true

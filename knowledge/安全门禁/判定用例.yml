@@ -1,0 +1,96 @@
+# 门禁判定回归用例 —— 跑 `repairbench safety --selftest` 验证
+#
+# 为什么要有这张表：2026-09-14 手工抽查时撞见「用碱性除油剂清洗发动机壳体」
+# 被误判 BLOCK（「发动」是「发动机」的子串）。靠肉眼撞见不可靠。
+#
+# **过度拦截同样是缺陷**。门禁天天误报，人就学会无视它，
+# 真正的 BLOCK 也会跟着被无视 —— 那时这套机制就等于不存在。
+# 所以 expect: OK / WARN 的用例和 expect: BLOCK 的一样重要。
+
+cases:
+  # ── 必须拦住 ──
+  - {action: "打火看看能不能着",              expect: BLOCK, expect_rules: [crank-before-hand-turn, crank-with-old-fuel], why: "未盘车+旧油。**两条都要命中** —— 只断言级别的话，删掉其中一条仍会全绿"}
+  - {action: "试试能不能发动车",              expect: BLOCK, why: 同上}
+  - {action: "手动盘车转不动，用起动机拖一下", expect: BLOCK, expect_rules: [force-crank-stuck-engine], why: 转不动加力=拉伤缸壁}
+  - {action: "把车骑出去遛一圈",              expect: BLOCK, expect_rules: [ride-before-flange-recall], why: 后轮法兰召回未执行}
+  - {action: "road test the bike",            expect: BLOCK, expect_rules: [ride-before-flange-recall], why: 同上，英文}
+
+  # ── 必须设卡但不阻止 ──
+  - {action: "通电试试仪表亮不亮",            expect: GATE,  expect_rules: [power-before-new-battery], why: 亏电会吐假码}
+  - {action: "用 GS-911 读故障码",            expect: GATE,  expect_rules: [scan-before-new-battery], why: 同上}
+  - {action: "抽干油箱里的旧汽油",            expect: GATE,  expect_rules: [fuel-work-safety], why: 汽油作业四项确认}
+  - {action: "拆前刹车卡钳重新装配",          expect: GATE,  expect_rules: [brake-final-assembly], why: 制动=装错会死人}
+  - {action: "举升车辆准备换机油",            expect: GATE,  expect_rules: [lifting], why: 高重心大排量 ADV}
+
+  # ── 必须提醒但不设卡 ──
+  - {action: "检查节气门拉线的塑料耳有没有裂", expect: WARN, expect_rules: [throttle-plastic-ear], why: 2009 投诉：塑料拉线轮开裂}
+  - {action: "看一下燃油表读数还剩多少油",     expect: WARN, expect_rules: [fuel-gauge-trust], why: fuel strip 读数不可信}
+  - {action: "拆下侧盖看看线束",              expect: WARN, why: 拆之前先拍照}
+
+  # ── 必须放行（误报即缺陷）──
+  - {action: "用碱性除油剂清洗发动机壳体",     expect: WARN, expect_rules: [magnesium-alkaline], why: "只该命中镁/铝 pH，不该命中「发动」"}
+  - {action: "检查点火线圈的插头有没有腐蚀",   expect: OK,   why: "「点火」不得被「点火线圈」吞掉"}
+  - {action: "拍全车八方位照",                expect: OK,   why: 纯记录动作}
+  - {action: "量一下轮胎 DOT 生产周期码",      expect: OK,   why: 纯读数}
+  - {action: "整理手册和工具清单",            expect: OK,   why: 不碰车}
+  - {action: "cancel the last operation",     expect: OK,   why: "「can」不得命中 cancel —— 词边界"}
+
+# ─────────────────────────────────────────────────────────────
+# 阶段维度用例
+#
+# 监工 2026-09-14-b 抓到：门禁此前只校验 intent 字符串，对 phase 参数零校验。
+# 在 P1 请求 phase=P8 就能拿到「点火」步骤 —— 而同样的意图用 intent 表达会被 BLOCK。
+# **上面 19 条用例全部只有 action，没有一条带 phase，所以 19/19 是假绿灯。**
+#
+# 教训：测试集缺哪个维度，哪个维度就会有洞，而且绿灯会让人以为没有。
+# expect_locked: true 表示该阶段的作业步骤必须被扣留（tasks 必须为空）。
+#
+# 另：动作用例可写 expect_rules，指名必须命中哪几条规则。
+# 只断言最终级别是不够的 —— 监工 2026-09-15 实测：两条规则 match 词重叠时，
+# 删掉其中一条，级别不变，35/35 照样全绿。**绿灯守不住被它顶替的那条规则。**
+
+phase_cases:
+  - {phase: P8, from: P1, expect_locked: true,  why: "首次启动含「点火」，P1 时 BLOCK 未解除"}
+  - {phase: P9, from: P1, expect_locked: true,  why: "路试 —— 后轮法兰召回未执行，骑行是 BLOCK"}
+  - {phase: P2, from: P1, expect_locked: false, why: "下一阶段，内容不触发 BLOCK，正常规划应放行"}
+  - {phase: P4, from: P1, expect_locked: false, why: "燃油作业是 GATE 不是 BLOCK，给步骤但要带确认清单"}
+  - {phase: P1, from: P1, expect_locked: false, why: "当前阶段永不扣留"}
+  - {phase: P0, from: P1, expect_locked: false, why: "已过阶段，回看不扣留"}
+
+  # 写法变体 —— 2026-09-14 自攻实测发现 `phase=p8`（小写）返回 phase_locked=false，
+  # 它回答的是「未锁定」而不是「没有这个阶段」。虽没漏出步骤，但误导性答案同样是缺陷。
+  - {phase: p8,    from: P1, expect_locked: true, why: "小写"}
+  - {phase: P08,   from: P1, expect_locked: true, why: "补零"}
+  - {phase: " P8 ", from: P1, expect_locked: true, why: "前后空格"}
+
+# ─────────────────────────────────────────────────────────────
+# 多车隔离用例
+#
+# 监工 2026-09-14-c 实测：`workbench -v 2014-HD-XL1200`（哈雷）返回了三条
+# **BMW 召回作业项**并带「NHTSA A 级」徽章 —— 因为 BMW 专有的检查写在
+# 跨车型的通用流程里。隔离要靠结构（车辆档案拥有自己的 phase_tasks），
+# 不能靠记得过滤。
+#
+# forbid: 该车的任何阶段作业项里都不许出现这些字样
+
+isolation_cases:
+  - vehicle: 2014-HD-XL1200
+    forbid: ["15V141000", "10V276000", "法兰", "节气门拉线", "fuel strip", "BMW"]
+    why: 哈雷不该收到 BMW 的召回与代际缺陷
+  - vehicle: 2009-BMW-R1200GS
+    require: ["15V141000", "10V276000"]
+    why: BMW 自己的召回检查必须还在（摘出通用流程后不能丢）
+
+# ─────────────────────────────────────────────────────────────
+# 车辆 id 写法
+#
+# 监工实测：Path::join 遇到绝对路径会丢弃前缀，于是
+# `-v /tmp/任意/EVIL` 配一个自制 VEHICLE.yml 就成了「合法车辆」，
+# 召回为空、硬红线为空，BLOCK 门禁随之全部解除。
+
+vehicle_id_cases:
+  - {id: "/tmp/rbprobe/vehicles/EVIL",         expect_reject: true,  why: 绝对路径会让 join 丢弃前缀}
+  - {id: "2009-BMW-R1200GS/../2014-HD-XL1200", expect_reject: true,  why: 相对穿越}
+  - {id: "./2009-BMW-R1200GS",                 expect_reject: true,  why: 点开头不是单段目录名}
+  - {id: "不存在的车",                          expect_reject: true,  why: 不在枚举列表里}
+  - {id: "2009-BMW-R1200GS",                   expect_reject: false, why: 正常}

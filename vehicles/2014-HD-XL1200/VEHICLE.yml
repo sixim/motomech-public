@@ -1,0 +1,42 @@
+# 2014 Harley-Davidson XL1200 — 适用性真相源（骨架，待核实）
+#
+# ⚠️ 与 R1200GS 是完全不同的机器。两台车的任何规格都不可互借。
+
+id: 2014-HD-XL1200
+make: Harley-Davidson
+model: XL1200 (Sportster)
+year: 2014
+variant: ~                      # ⚠️ 待确认：XL1200C/X/T/V/CA 是不同车，件号不同
+
+engine_code: Evolution-1200     # 待核实
+engine_type: air-cooled
+configuration: V-twin-45deg     # 待核实
+ecu: Delphi                     # 待核实
+final_drive: belt               # 待核实
+
+vin: ~
+mileage: ~
+
+applicability_excludes:
+  - BMW
+  - R1200GS
+  - boxer
+  - CAN-bus                     # Sportster 不是 CAN 架构，GS 的电路方法论不适用
+  - shaft-drive
+
+# ── 与 GS 的关键差异（影响工具与流程）────────────────
+differences_from_gs:
+  - "诊断生态完全不同：Harley 用 Delphi ECU，协议封闭。
+     GitHub 上没有找到可用的开源诊断方案（BMW 有 ediabaslib）。
+     可能需要 H-D 专用工具（Digital Technician II / ThunderMax 等），待调研。"
+  - "皮带传动 vs 轴传动：保养项目完全不同（无终传油，有皮带张力与磨损）"
+  - "风冷 V-twin vs 风冷/油冷 boxer：气门机构、机油系统都不同"
+  - "无 CAN 总线：传统电路排查方法适用，GS 的'不能拔保险丝'规则在这里不成立"
+
+specs_verified: {}              # 尚无 A 级来源
+
+specs_pending:
+  - item: 全部
+    note: "骨架阶段。需要先确认 variant，再找 H-D 官方 Service Manual（2014 Sportster）"
+
+status: 骨架｜尚未开始

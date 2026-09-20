@@ -1,0 +1,61 @@
+# 排查树 —— 燃油表 / 液位传感器（fuel strip）
+#
+# 为什么单独一棵树：这是本车 NHTSA 投诉里**最高频**的故障（2009 年款 30 条投诉中占比最大）。
+# 而且它的危害形式很特别 —— 它不会让车抛锚，它让你**在路上没油**。
+# 车主原话：「FUEL STRIP FAILED. REPLACED AGAIN IN 6/2012」—— **换了还会再坏**。
+#
+# 另一个必须单独成树的理由：它会**伪装成别的故障**。
+# 燃油表乱跳 + 警告灯乱亮，很容易被当成电气故障或油泵故障去查。
+
+id: fuel-level
+symptom: "燃油表不准/乱跳/不动 / 余油警告灯乱亮或不亮 / 明明有油却报警"
+applies_to_generations: [hexhead]
+severity: 安全关键
+related_issues:
+  - "A 级（NHTSA 投诉）：2009 款 fuel strip 失效是本车最高频故障，且**更换后仍会复发**"
+  - "2010 之后 BMW 才改成浮子式 —— 本车属于老式 strip，不要套用后期资料"
+
+cross_check:
+  - "P3 通电后**第一件事**就是核对燃油表读数与实际油量 —— 这是 VEHICLE.yml 里的专有作业项"
+  - "如果表不准，后续所有「还剩多少油」的判断都不可信，包括 P8 首次启动的油量准备"
+
+steps:
+  - id: baseline-compare
+    check: "通电（不启动），记录燃油表读数；同时用实际方法确认油箱里有多少油"
+    expect: "表读数应与实际油量大致相符"
+    basis: "A｜NHTSA 2009 投诉（本车最高频故障，必须先证伪）"
+    if_fail: "明显不符 → 传感器可疑，next: warning-light"
+    if_pass: "读数相符 → 暂时可信，但**仍要在骑行中复核**（strip 常表现为间歇性失效）"
+    note: "油箱容量 spec:fuel_system.tank_capacity_l，余油警告触发量 spec:fuel_system.reserve_when_warning_l ——\
+           用这两个数反推表读数是否合理"
+
+  - id: warning-light
+    check: "观察余油警告灯行为：常亮、乱闪、还是完全不亮"
+    expect: "只在接近余油量时亮"
+    basis: "spec:fuel_system.reserve_when_warning_l"
+    if_fail: "满油却亮 / 空油却不亮 / 随颠簸乱闪 → strip 或其线路故障"
+    if_pass: "警告灯行为正常但表不准 → 可能是仪表侧而非传感器侧，next: wiring-check"
+
+  - id: wiring-check
+    check: "沿电路图查燃油液位传感器到仪表的线路与插头（腐蚀、接触不良）"
+    expect: "线路通、插头干净无腐蚀"
+    basis: "circuit:269"
+    if_fail: "插头腐蚀/线路断 → 先修线路再判传感器（换了传感器但线路坏，等于白换）"
+    if_pass: "线路正常仍不准 → 传感器本体故障"
+    note: "p269 是本车「instruments and fog lights」图，燃油液位传感器（Fuel level sensor）在图上"
+
+  - id: tank-access
+    check: "拆油箱以接近传感器"
+    expect: "按规定扭力复装 spec:torque.fuel_tank_mounting_nm"
+    basis: "spec:torque.fuel_tank_mounting_nm"
+    if_fail: "拆装油箱涉及燃油管快接头与 O 环 —— O 环老化会漏油，属安全关键"
+    note: "⚠️ 停放十年的车，燃油管 O 环几乎必须换。件号档案里还是缺的（需 RealOEM 按 VIN 查）"
+    gated: true
+
+  - id: expectation-setting
+    check: "决定换不换：认清这个件的真实寿命"
+    expect: "更换后仍可能复发 —— 这不是装配质量问题，是这代设计的已知缺陷"
+    basis: "A｜NHTSA 投诉原话「REPLACED AGAIN IN 6/2012」"
+    note: "所以实用做法是：**不要把油量判断托付给这块表**。\
+           按里程 + 油箱容量 spec:fuel_system.tank_capacity_l 自己算，表只当参考。\
+           这条是本树最有价值的一步 —— 它改变的是使用习惯，不是零件。"

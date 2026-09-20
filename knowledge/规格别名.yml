@@ -1,0 +1,38 @@
+# 中文问法 → 规格 item 英文关键词。问答检索用。
+# 声明,不推断:用户用中文问,规格 item 是英文键,靠这张表桥接。
+# 新增规格类别时在这里补一行。
+aliases:
+  气门间隙: valve
+  气门: valve
+  火花塞: spark
+  点火: [spark, ignition]
+  机油: engine_oil
+  发动机油: engine_oil
+  变速箱油: gearbox
+  波箱油: gearbox
+  终传油: final_drive
+  终传: final_drive
+  刹车油: brake_fluid
+  制动液: brake_fluid
+  离合器油: clutch
+  轮胎: tyre
+  胎压: tyre_pressure
+  扭力: torque
+  扭矩: torque
+  电瓶: battery
+  电池: battery
+  发电机: alternator
+  充电: alternator
+  压缩比: compression
+  缸压: compression_test
+  油压: oil_pressure
+  怠速: idle
+  凸轮轴: camshaft
+  摇臂: rocker
+  燃油: fuel
+  油箱: fuel
+  前叉: fork
+  悬挂: suspension
+  减震: shock
+  侧撑: side_stand
+  中撑: centre_stand

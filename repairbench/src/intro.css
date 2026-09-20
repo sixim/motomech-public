@@ -1,0 +1,62 @@
+/* ── 开场动画 ────────────────────────────────────────── */
+#intro{position:fixed;inset:0;z-index:9999;background:
+  radial-gradient(1000px 700px at 50% 42%, #0a1740 0%, #030612 55%, #000 100%);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+#intro.fade{animation:introFade .6s ease forwards}
+@keyframes introFade{to{opacity:0;visibility:hidden}}
+
+/* 反光地面网格 */
+#intro .grid-floor{position:absolute;left:-20%;right:-20%;bottom:-6%;height:42%;
+  background:
+    repeating-linear-gradient(90deg,#2a5cff22 0 1px,transparent 1px 60px),
+    repeating-linear-gradient(0deg,#2a5cff18 0 1px,transparent 1px 60px);
+  transform:perspective(520px) rotateX(66deg);transform-origin:bottom;
+  opacity:0;transition:opacity 1s ease .3s;
+  mask-image:linear-gradient(to top,#000,transparent)}
+#intro.draw .grid-floor{opacity:.55}
+
+#bike{width:min(78vw,940px);height:auto;filter:drop-shadow(0 0 22px #3d6bff66);
+  transform:translateZ(0)}
+
+/* 逐笔绘出:每条描边 pathLength=1,dashoffset 1→0 */
+#intro .ln{stroke-dasharray:1;stroke-dashoffset:1}
+#intro.draw .ln{animation:drawLn 1.5s ease forwards}
+#intro.draw .spk{animation:drawLn 1s ease forwards .5s}
+#intro.draw .hub{animation:drawLn .8s ease forwards .3s}
+@keyframes drawLn{to{stroke-dashoffset:0}}
+
+/* 爆炸分解:每个部件沿自身向量飞散 + 旋转淡出 */
+#intro .part{transition:transform 1.25s cubic-bezier(.5,-0.3,.3,1),
+  opacity 1.25s ease}
+#intro.boom .part{transform:translate(var(--tx),var(--ty)) rotate(8deg) scale(1.04);
+  opacity:0}
+#intro.boom #bike{transition:filter 1.2s ease;filter:drop-shadow(0 0 40px #6fa0ffaa)}
+
+/* 火花粒子 */
+#intro .spark-layer i{position:absolute;width:3px;height:3px;border-radius:50%;
+  background:#8fb8ff;box-shadow:0 0 8px 2px #4a7dffcc;opacity:0}
+#intro.boom .spark-layer i{animation:spark 1.3s ease-out forwards}
+@keyframes spark{0%{opacity:1;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.2)}}
+
+/* 标题 */
+#intro .intro-title{position:absolute;text-align:center;opacity:0;
+  transform:translateY(12px);transition:opacity .8s ease,transform .8s ease}
+#intro.show-title .intro-title{opacity:1;transform:translateY(0)}
+#intro .intro-title .zh{font-size:30px;font-weight:600;letter-spacing:8px;
+  color:#dbe6ff;text-shadow:0 0 24px #4a7dffaa}
+#intro .intro-title .en{font-size:13px;letter-spacing:6px;color:#6fa0ff;margin-top:8px;
+  font-family:ui-monospace,monospace;text-transform:uppercase}
+#intro.boom .intro-title{opacity:.0;transition:opacity .5s ease}
+
+#intro .skip{position:absolute;bottom:26px;font-size:12px;color:#4a5b82;
+  letter-spacing:2px}
+
+/* ── 图片碎裂爆炸(有 gs-intro.png 时启用)────────────── */
+#intro .stage{position:relative;display:flex;align-items:center;justify-content:center}
+#intro .shatter{position:relative;filter:drop-shadow(0 0 26px #3d6bff55)}
+#intro .shatter .frag{position:absolute;opacity:0;mix-blend-mode:screen;
+  transition:transform 1.3s cubic-bezier(.5,-0.3,.3,1),opacity 1.2s ease}
+#intro .shatter.in .frag{opacity:1;transform:none}
+#intro .shatter.boom .frag{opacity:0;
+  transform:translate(var(--fx),var(--fy)) rotate(var(--fr)) scale(.6)}

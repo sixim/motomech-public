@@ -1,0 +1,196 @@
+/* 视觉:纯黑底 + 幽蓝主色 + 靛紫强调 + 生物发光。参考自项目视觉样图 */
+:root{
+  --bg:#010309;            /* 近纯黑 */
+  --bg2:#040711;
+  --panel:#070c18;
+  --panel2:#0a1122;
+  --line:#16203a;
+  --fg:#dbe6ff;            /* 字偏冷白 */
+  --dim:#6c7fa8;
+  --blue:#4a7dff;          /* 电蓝主色 */
+  --blue-bright:#6fa0ff;
+  --indigo:#8b6cff;        /* 靛紫强调 */
+  --glow:#3d6bffaa;
+  --amber:#ffb020;
+  --red:#ff4d6a;
+  --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1100px 560px at 72% -12%, #12245a40, transparent 58%),
+    radial-gradient(820px 480px at 8% 112%, #2a1a6633, transparent 54%),
+    var(--bg);
+  color:var(--fg);
+  font:14px/1.65 -apple-system,"PingFang SC",system-ui,sans-serif;
+  height:100vh;overflow:hidden;
+}
+#app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+
+/* 顶栏 */
+header{display:flex;align-items:center;gap:14px;padding:13px 20px;
+  background:linear-gradient(180deg,#060b18,#020509);
+  border-bottom:1px solid var(--line);
+  box-shadow:0 1px 0 #3d6bff22, 0 8px 24px -18px var(--blue)}
+header .bike{font-size:15px;font-weight:600;letter-spacing:.3px}
+header .code{font-size:11px;color:var(--blue-bright);border:1px solid #3d6bff66;
+  border-radius:5px;padding:2px 8px;background:#3d6bff14;
+  box-shadow:0 0 12px -2px var(--glow)}
+header .vin{font-size:12px;color:var(--dim);margin-left:auto;font-family:ui-monospace,monospace}
+select{background:#070d1c;color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;padding:6px 10px;font-size:13px}
+select:focus{outline:none;border-color:var(--blue)}
+
+.tabs{display:flex;gap:4px;margin-left:8px}
+.tab{background:transparent;border:1px solid transparent;color:var(--dim);
+  padding:6px 13px;border-radius:8px;cursor:pointer;font-size:13px;transition:.15s}
+.tab:hover{color:var(--fg);background:#3d6bff10}
+.tab.on{color:var(--blue-bright);background:#3d6bff1c;border-color:#3d6bff55;
+  box-shadow:0 0 16px -4px var(--glow)}
+
+main{display:grid;grid-template-columns:270px 1fr;overflow:hidden}
+aside{background:linear-gradient(180deg,#060b18,#02040b);
+  border-right:1px solid var(--line);padding:18px 16px;overflow-y:auto}
+section{padding:22px 26px;overflow-y:auto}
+h3{font-size:13px;font-weight:600;color:var(--blue-bright);margin:20px 0 8px;
+  letter-spacing:.4px}
+h3:first-child{margin-top:0}
+h4{font-size:12px;color:var(--dim);margin:14px 0 6px;font-weight:600}
+
+/* 阶段进度 */
+.phases{display:flex;flex-direction:column;gap:2px;margin-bottom:18px}
+.ph{display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:8px;
+  font-size:13px;color:var(--dim);cursor:pointer;transition:.15s}
+.ph:hover{background:#3d6bff10;color:var(--fg)}
+.ph .n{font-family:ui-monospace,monospace;font-size:11px;opacity:.7;min-width:20px}
+.ph.done{color:#5c6f95}
+.ph.done .n::after{content:" ✓";color:var(--blue)}
+.ph.cur{color:var(--fg);background:linear-gradient(90deg,#3d6bff26,transparent);
+  border-left:2px solid var(--blue);box-shadow:inset 0 0 20px -8px var(--glow)}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stats>div{background:#0a1120;border:1px solid var(--line);border-radius:8px;
+  padding:9px 11px;font-size:11px;color:var(--dim)}
+.stats b{display:block;font-size:19px;color:var(--blue-bright);font-weight:600;
+  text-shadow:0 0 14px var(--glow)}
+.hint{font-size:11px;color:var(--dim);margin-top:10px;line-height:1.5}
+
+/* 卡片 */
+.card{background:linear-gradient(180deg,#0a11220f,#0a1122);
+  border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin:8px 0}
+.card.danger{border-color:#ff4d6a44;box-shadow:inset 0 0 30px -20px #ff4d6a}
+.card.gate{border-color:#ffb02044}
+.dimline{font-size:12px;color:var(--dim);padding:6px 0;line-height:1.6}
+.nores{color:var(--dim);font-size:13px;line-height:1.8}
+code{background:#0b1226;padding:1px 6px;border-radius:5px;
+  font-size:12px;color:var(--blue-bright);font-family:ui-monospace,monospace}
+.err{color:var(--red);white-space:pre-wrap;padding:14px;font-size:13px}
+
+/* 召回 / 硬红线 / 门禁 */
+.recall{padding:8px 0;border-bottom:1px solid var(--line)}
+.recall:last-child{border:0}
+.recall .h{display:flex;align-items:center;gap:8px;font-weight:600}
+.recall .id{font-family:ui-monospace,monospace;color:var(--blue-bright);font-size:12px}
+.recall .sev{font-size:10px;padding:1px 6px;border-radius:4px;background:#ff4d6a22;color:var(--red)}
+.recall .sev.minor{background:#ffb02022;color:var(--amber)}
+.recall .n{font-size:12px;color:var(--dim);margin-top:3px;line-height:1.6}
+.rule{display:flex;gap:10px;padding:6px 0;font-size:13px}
+.rule .i{color:var(--blue);font-weight:600;min-width:18px}
+.rule .i.BLOCK,.rule .i:is([data-l=BLOCK]){color:var(--red)}
+
+/* 作业项 */
+.task{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #16203a80}
+.task:last-child{border:0}
+.task .box{color:var(--blue);flex:none}
+.task.warn .t{color:var(--amber)}
+.task .t{font-weight:500}
+.task .d{font-size:12px;color:var(--dim);margin-top:2px;line-height:1.6}
+.task .src{font-size:11px;color:#5c6f95;margin-top:2px}
+
+/* 徽章(来源级别) */
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;margin-right:7px}
+.lvA{background:#1a3a5c;color:var(--blue-bright);box-shadow:0 0 10px -3px var(--glow)}
+.lvB{background:#2a2c52;color:var(--indigo)}
+.lvC{background:#3d3320;color:var(--amber)}
+.lvD{background:#3d2029;color:var(--red)}
+.ref{font-size:11px;color:var(--dim)}
+
+/* 检索 */
+.searchbar{display:flex;gap:9px;margin:8px 0}
+.searchbar input{flex:1;background:#070d1c;border:1px solid var(--line);color:var(--fg);
+  padding:9px 13px;border-radius:9px;font-size:13px}
+.searchbar input:focus{outline:none;border-color:var(--blue);
+  box-shadow:0 0 18px -6px var(--glow)}
+.searchbar button{background:linear-gradient(180deg,var(--blue),#3559d6);color:#fff;
+  border:0;padding:9px 20px;border-radius:9px;cursor:pointer;font-weight:600;
+  box-shadow:0 0 20px -6px var(--blue)}
+.spec{display:grid;grid-template-columns:220px 1fr;gap:4px 12px;padding:9px 0;
+  border-bottom:1px solid var(--line)}
+.spec:last-child{border:0}
+.spec .k{color:var(--dim);font-size:12px;font-family:ui-monospace,monospace}
+.spec .v{font-weight:600;color:var(--fg)}
+.spec .b{grid-column:2}
+.hit{padding:9px 0;border-bottom:1px solid var(--line)}
+.hit .sn{font-size:12px;color:var(--dim);line-height:1.6;margin-top:4px}
+mark{background:#3d6bff33;color:var(--blue-bright);padding:0 2px;border-radius:3px}
+
+/* 诊断:症状→原因→排查树 */
+.cause{padding:11px 0;border-bottom:1px solid var(--line)}
+.cause:last-child{border:0}
+.cause .rank{color:var(--blue);font-weight:700;margin-right:6px}
+.cause .freq{font-size:11px;color:var(--dim);margin-left:6px}
+.cause .sym{font-size:12px;color:var(--indigo);margin-top:3px}
+.cause .tree{display:inline-block;margin-top:6px;font-size:12px;color:var(--blue-bright);
+  cursor:pointer;border:1px solid #3d6bff44;border-radius:6px;padding:3px 10px}
+.cause .tree:hover{background:#3d6bff1c}
+.step{background:#0a1122;border:1px solid var(--line);border-left:2px solid var(--blue);
+  border-radius:9px;padding:12px 14px;margin:8px 0}
+.step .chk{font-weight:600}
+.step .exp{font-size:13px;margin-top:5px}
+.step .exp .val{color:var(--blue-bright);font-weight:600}
+.step .exp.conflict{color:var(--red)}
+.step .basis{font-size:11px;color:#5c6f95;margin-top:4px}
+.step .branch{font-size:12px;margin-top:5px}
+.step .gated{font-size:11px;color:var(--amber);margin-top:5px}
+
+/* 差距 */
+.gap{padding:10px 0;border-bottom:1px solid var(--line)}
+.gap .sev0{color:var(--red)}
+.gap .sev1{color:var(--amber)}
+.gap .who{font-size:11px;padding:1px 7px;border-radius:4px;background:#3d6bff1c;color:var(--blue-bright)}
+.gap .title{font-weight:600;margin:2px 0}
+.gap .how{font-size:12px;color:var(--dim);margin-top:3px}
+
+/* ⑥ 作业单内联规格 —— 值现查 specs_usable,冲突扣留 */
+.spec{display:grid;grid-template-columns:1fr auto auto;gap:6px 10px;align-items:baseline;
+  margin-top:4px;padding:4px 8px;border-radius:6px;font-size:11.5px;
+  background:#0a1330;border:1px solid #3d6bff22}
+.spec .sl{color:var(--blue-bright);font-family:ui-monospace,monospace}
+.spec .sv{font-weight:600;color:#eaf1ff}
+.spec .sstat{font-size:10px;padding:1px 6px;border-radius:999px;white-space:nowrap}
+.spec .ssrc{grid-column:1/-1;font-size:10px;color:#7f92c8;opacity:.8}
+.spec-ok .sstat{color:#7effc0;background:#0f3a2a;border:1px solid #2effa055}
+.spec-conflict{background:#2a0f14;border-color:#ff5a6e55}
+.spec-conflict .sstat{color:#ff9aa8;background:#3a0f16;border:1px solid #ff5a6e77}
+.spec-conflict .sv{color:#ff9aa8}
+.spec-missing{opacity:.7}
+.spec-missing .sstat{color:#ffd27f;background:#332612;border:1px solid #ffb44a55}
+
+/* 图纸(电路图) */
+.pg{margin-top:10px;padding:8px;border-radius:8px;background:#0a1330;border:1px solid #3d6bff22}
+.wd{width:100%;margin-top:8px;border-radius:6px;border:1px solid #3d6bff33;
+  background:#fff;  /* 电路图是浅底印刷品,深色背景上要给白底才看得清线色 */
+  cursor:zoom-in}
+.wd:hover{border-color:var(--blue)}
+.card.warn{border-color:#ff5a6e44}
+
+/* 交叉验证徽章 */
+.cv{display:flex;gap:8px;align-items:baseline;padding:5px 8px;margin-top:4px;
+  border-radius:6px;background:#0a1330;border:1px solid #3d6bff22;font-size:11.5px}
+.cv .k{color:var(--blue-bright);font-family:ui-monospace,monospace;flex:1}
+.cv .v{font-weight:600}
+.cv-single{border-color:#ffb44a55}
+.cv-single .badge{color:#ffd27f;font-size:10px;white-space:nowrap}
+.cv-bad{border-color:#ff5a6e55}
+.cv-bad .badge{color:#ff9aa8}
+.cv .badge{font-size:10px;white-space:nowrap}

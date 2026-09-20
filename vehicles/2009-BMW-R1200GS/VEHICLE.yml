@@ -1,0 +1,577 @@
+# 2009 BMW R1200GS — 适用性真相源
+#
+# ⚠️ 所有知识检索、零件采购、规格查询都必须先过这个过滤器。
+#    这不是形式主义：hexhead 用了 camhead 的扭力值 = 滑牙的缸体。
+#
+# ══════════════════════════════════════════════════════════════
+# 2026-09-14 重大订正：本车是 2009 hexhead，不是 2010 camhead
+#
+# 起因：车主提供 VIN YOUR_VIN_HERE。
+# NHTSA 官方解码器（A 级）返回 ModelYear=2009 / Series=K25 / EngineHP=104，
+# 且「Check Digit is correct」—— VIN 校验位通过，不是录入错误。
+# 104 hp 对应 hexhead；camhead(2010+) 是 110 hp。
+# 车主同时提供了 Haynes《BMW 04-09 R1200 Twins》PDF，独立印证同一结论。
+#
+# 后果（必须全部处理，否则整个平台建在错的地基上）：
+#   1. 适用性排除项**整体反转** —— 此前排除 hexhead，现在要排除 camhead/LC
+#   2. 此前归档在「参考-非本车型」的 hexhead 扭力表，**现在才是本车资料**
+#   3. 此前当作 A 级的《BMW_Riders_Manual_R1200GS_2010》**不是本车手册** ——
+#      由它得出的 16 条 A 级规格全部降级为待核实（见 specs_pending）
+#   4. 召回清单变了：2009 多一条 10V276000（前刹车管，致命级）
+#   5. 故障模式重建：2009 有 30 条 NHTSA 投诉（2010 只有 8 条），主模式不同
+#
+# 教训：适用性过滤只能保证「资料对得上车辆档案」，
+#       保证不了「车辆档案对得上真车」。**身份要从 VIN 起，不从人的印象起。**
+# ══════════════════════════════════════════════════════════════
+
+id: 2009-BMW-R1200GS
+make: BMW
+model: R1200GS
+year: 2009
+nickname: 瓜皮巨甜
+
+# ── 身份标识（决定所有资料选型）────────────────────
+engine_code: hexhead            # SOHC，2004–2009。**不是 camhead(2010+ DOHC)**
+engine_type: air-oil-cooled     # 风冷/油冷。不是水冷 LC
+displacement_cc: 1170
+power_hp: 104                   # A｜NHTSA VIN 解码器
+model_code: K25                 # A｜NHTSA VIN 解码器
+ecu: BMS-K                      # ⚠️ 待核实：hexhead 用 BMS-K，camhead 才是 BMS-K+。见 specs_pending#ecu_variant
+diag_port: 10-pin-round         # 座垫下/电池仓。不是 OBD-II
+abs: Integral-ABS-non-servo     # ⚠️ 待核实：2007 起取消助力泵，2009 应属非助力型。见 specs_pending#abs_variant
+electrical: single-wire-CAN
+fuses: electronic               # ZFE 电子保险丝，没有传统保险丝盒
+ignition: twin-spark            # B｜Haynes 4598 有「primary / secondary spark plug」专章(p43)
+                                # ⚠️ 副塞型号是否与主塞相同，已拍页面未载 —— 见 specs_pending
+final_drive: shaft
+
+vin: YOUR_VIN_HERE          # A｜车主提供，NHTSA 解码校验位通过
+mileage: ~                      # 待采集
+production_date: ~              # 待采集（铭牌）
+
+# ── 硬性排除：命中任何一条的资料一律不适用 ──────────
+# ⚠️ 必须中英文都列：本项目文件名以中文为主，只写英文词会整片漏判
+# ⚠️ 2026-09-14 整体反转 —— 此前排除的 hexhead 正是本车
+applicability_excludes:
+  - camhead
+  - 凸轮头
+  - DOHC
+  - "R1200GS 2010-2012"
+  - "R1200GS 2010"
+  - LC                          # 2013+ 水冷，件号和结构都不同
+  - GSLC
+  - wethead
+  - 水冷头
+  - "R1200GS 2013-2018"
+  - water-cooled
+  - 水冷
+  - 液冷
+  - servo-ABS                   # 2004-06 的助力 ABS，2009 已取消，复活流程不同
+  - 助力ABS
+
+# 已知的踩坑记录：搜到的机油滤 11427721779 / 空滤 13727726799
+# 标注适用 "2013-2018 / R1200-1250LC"，那是水冷件号，本车不适用。
+
+# ── 项目硬红线（顺序不可调换，违反会毁件）──────────
+hard_rules:
+  - id: no-crank-first
+    rule: "不能直接打火。十年的汽油已变质成胶质，会把胶质泵进喷油嘴"
+  - id: hand-turn-before-starter
+    rule: "上起动机前必须手动盘车确认能自由转动。boxer 水平缸油膜早已流失，缸壁可能锈蚀"
+  - id: battery-before-scan
+    rule: "必须先装新电池再读故障码。CAN-bus 车亏电会吐出大量假故障码"
+
+# ── 已核实规格 ──────────────────────────────────────
+# B 级 = Haynes 4598《BMW R1200 Twins 04-09》，本车代际的权威三方手册。
+# page 指 PDF 页码（可直接回原图核对）；括号里是书页编号。
+# 2026-09-14：车主拍摄了第 1 章全章（PDF p21–50）+ Pre-ride checks（p17）。
+specs_verified:
+  spark_plug:
+    type: "Bosch YR5LDE 或 NGK DCPR 8 EKC"
+    gap_standard_mm: "0.7–0.9"
+    gap_service_limit_mm: 1.0
+    source: "B｜Haynes 4598 · Servicing specifications · Engine"
+    page: 21                     # 书页 1•1
+    field_sources:
+      type:
+        source: "B｜Haynes 4598 p1•1。⚠️ 与旧档案的 NGK MAR8B-JDS **完全不同** —— 那是 2010 camhead 的塞"
+        page: 21
+  valve_clearance:
+    intake_mm: 0.15              # 冷机
+    exhaust_mm: 0.30             # 冷机
+    condition: COLD engine
+    source: "B｜Haynes 4598 · Servicing specifications · Engine"
+    page: 21
+  rocker_arm:
+    endplay_mm: "0.05–0.4"
+    source: "B｜Haynes 4598"
+    page: 21
+  engine:
+    idle_rpm: "1100–1300"        # 手册按年份分档，本车属「2008-on R1200 GS」
+    oil_consumption_max: "1.0 L / 1000 km（600 miles）"
+    throttle_vacuum_diff_max_mbar: 25
+    source: "B｜Haynes 4598"
+    page: 21
+    field_sources:
+      idle_rpm:
+        source: "B｜Haynes p1•1 原文分两档：「R1200 R/ST/S、2004 to 2007 R1200 GS」1100–1200；「R1200 RT、**2008-on R1200 GS**」1100–1300。本车 2009 属后者"
+        page: 21
+  engine_oil:
+    type: "API SF 或更高"
+    viscosity: "20W/50，或见 Pre-ride checks 的黏度对照表"
+    capacity_l: 4.0              # 换油并换滤芯
+    max_min_difference_l: 0.5
+    source: "B｜Haynes 4598 · Lubricants and fluids"
+    page: 22                     # 书页 1•2
+  gearbox_oil:
+    type: "API GL5 SAE90 或 Castrol SAF-XO"
+    capacity_l: "0.8–0.9"
+    source: "B｜Haynes 4598"
+    page: 22
+  final_drive_oil:
+    type: "Castrol SAF-XO"
+    capacity_l: 0.22
+    source: "B｜Haynes 4598"
+    page: 22
+    field_sources:
+      capacity_l:
+        canonical: final_drive_oil_capacity
+        source: "B｜Haynes p1•2 = 0.22 L。⚠️ 旧档案候选里有个「2010 款 180ml」—— 按那个加会**少 40ml**，而本车已知故障模式正是终传轴承失效"
+        page: 22
+  brake_fluid:
+    spec: DOT 4
+    source: "B｜Haynes 4598。与 2010 手册 p118 一致，跨代交叉印证"
+    page: 22
+  clutch_fluid:
+    spec: "Vitamol V10"
+    source: "B｜Haynes 4598"
+    page: 22
+  brake_wear_limits:
+    pad_min_friction_mm: 1.0
+    disc_min_front_mm: 4.0
+    disc_min_rear_mm: 4.5
+    source: "B｜Haynes 4598 · Cycle parts"
+    page: 22
+  throttle_cable:
+    freeplay_twistgrip_mm: 0.5
+    freeplay_throttle_body_mm: "0.5–1.0"
+    source: "B｜Haynes 4598 · Cycle parts"
+    page: 22
+  tyre_pressure:
+    front_solo: "2.2 bar (32 psi)"
+    rear_solo: "2.5 bar (36 psi)"
+    front_loaded: "2.5 bar (36 psi)"
+    rear_loaded: "2.9 bar (42 psi)"
+    condition: 冷胎
+    source: "B｜Haynes 4598 · Pre-ride checks「Loading – all models」。与 2010 手册 p159 完全一致，跨代交叉印证"
+    page: 17
+  front_suspension:
+    type: "BMW Telelever"
+    fork_oil: "BMW telescopic fork oil (10W)"
+    fork_oil_capacity_l: 0.65          # R1200 GS / Adventure / ST
+    fork_tube_runout_limit_mm: 0.1
+    source: "B｜Haynes 4598 · Chapter 4 Specifications"
+    page: 152                          # 书页 4•1
+  rear_suspension:
+    type: "BMW Paralever"
+    source: "B｜Haynes 4598 · Chapter 4"
+    page: 152
+  brake_pedal:
+    stop_bolt_height_mm: "10.5–11.5"   # R1200 GS
+    stop_bolt_clearance_mm: "2.0–3.0"
+    source: "B｜Haynes 4598 · Chapter 4"
+    page: 152
+  torque_chassis:
+    brake_clutch_lever_pivot_bolt_nm: 9    # R1200 GS 2007-on（本车 2009）
+    brake_pedal_pivot_bolt_nm: 21          # R1200 GS/ST/R
+    centre_stand_pivot_bolts_nm: 40        # R1200 GS，与第 1 章一致 ✓
+    footrest_mounting_bracket_bolts_nm: 19
+    source: "B｜Haynes 4598 · Chapter 4 Torque settings"
+    page: 152
+    field_sources:
+      brake_clutch_lever_pivot_bolt_nm:
+        source: "B｜Haynes p4•1 按年份分档：GS/ST/S 2004-2006 = 6 Nm；**GS 2007-on = 9 Nm**。本车 2009 取后者"
+        page: 152
+  engine_general:
+    displacement_cc: 1170
+    bore_mm: 101
+    stroke_mm: 73
+    compression_ratio: "12.0 : 1"          # 2008 年起的 GS；2004-2007 是 11.0:1
+    source: "B｜Haynes 4598 · Chapter 2 Specifications"
+    page: 51                               # 书页 2•1
+    field_sources:
+      compression_ratio:
+        source: "B｜Haynes p2•1 分档：R1200 GS(2004 to 2007) = 11.0:1；**R1200 RT/ST/R、2008-on GS = 12.0:1**。本车 2009 取后者"
+        page: 51
+  engine_general_2:
+    transmission: "六速常啮合 (six-speed constant mesh)"
+    final_drive: shaft
+    valves_per_cylinder: 4
+    cooling: "风冷/油冷 (air/oil)"
+    clutch: "干式单片 + 膜片弹簧"
+    cylinder_id: "1 缸在左，2 缸在右"
+    source: "B｜Haynes 4598 · Ch2 Specifications General"
+    page: 51
+  compression_test:
+    good: "> 145 psi (10 Bar)"
+    normal: "125–145 psi (8.5–10 Bar)"
+    poor: "< 125 psi (8.5 Bar)"
+    source: "B｜Haynes 4598 · Ch2 · 2•2"
+    page: 52
+  oil_pressure:
+    warm_psi: "50–87 psi (3.5–6.0 Bar)"
+    source: "B｜Haynes 4598 · Ch2 · 2•2"
+    page: 52
+  rocker_arm_detail:
+    bore_diameter_mm: "16.016–16.034"
+    shaft_diameter_mm: "15.973–15.984"
+    clearance_standard_mm: "0.032–0.054"
+    clearance_service_limit_mm: 0.10
+    endplay_mm: "0.05–0.4"
+    source: "B｜Haynes 4598 · Ch2 · 2•2"
+    page: 52
+    field_sources:
+      endplay_mm:
+        source: "B｜Haynes 2•2，**与第 1 章 1•1 的 0.05–0.4 一致** —— 跨章交叉印证"
+        page: 52
+  camshaft:
+    intake_valve_lift_mm: 10.4
+    exhaust_valve_lift_mm: 10.0
+    bearing_holder_diameter_mm: "21.02–21.04"
+    journal_diameter_mm: "20.97–21.00"
+    journal_clearance_standard_mm: "0.02–0.07"
+    journal_clearance_service_limit_mm: 0.15
+    bearing_width_mm: "16.0–16.05"
+    cap_bearing_width_mm: "15.92–15.95"
+    axial_play_standard_mm: "0.08–0.13"
+    axial_play_service_limit_mm: 0.25
+    source: "B｜Haynes 4598 · Ch2 · 2•2（**该页版面向下漂一行，映射经算术自洽验证**）"
+    page: 52
+    field_sources:
+      journal_clearance_standard_mm:
+        source: |
+          B｜Haynes 2•2。⚠️ 该页标签列与数值列在照片上错开一行。
+          映射不是靠肉眼对齐定的，是靠**定义式算术**验的：
+            间隙 = holder 直径 − journal 直径
+            21.02 − 21.00 = 0.02 ；21.04 − 20.97 = 0.07 → 正好是标注的 0.02–0.07
+          轴向间隙同理：16.05 − 15.92 = 0.13 ；16.0 − 15.92 = 0.08 → 对上 0.08–0.13。
+          两组都自洽，映射成立。**没有这种定义式关系的页（如 4•2 扭力表）不可照此推断。**
+        page: 52
+  fuel_system:
+    grade: "无铅 95 RON（最低）"            # R1200 GS；RT/ST/S/R 要 98
+    tank_capacity_l: 20
+    reserve_when_warning_l: 4               # 警告灯亮时剩余
+    throttle_body_internal_diameter_mm: 42
+    source: "B｜Haynes 4598 · Ch3 Specifications（3•1）"
+    page: 130
+    field_sources:
+      reserve_when_warning_l:
+        source: |
+          B｜Haynes 3•1「Quantity remaining when level warning light comes on:
+          All other models 4 litres」（R1200 R 才是 3 L）。
+          ⚠️ 对本车特别要紧：fuel strip 失效是它的头号故障，仪表读数不可信时，
+          警告灯 + 这个 4 L 余量是唯一还能用的判据。
+        page: 130
+  ignition_coil:
+    primary_winding_ohms: 0.87
+    secondary_winding_kohms: 6
+    source: "B｜Haynes 4598 · Ch3「Ignition HT coils」（3•1）"
+    page: 130
+  torque_chassis_4_2:
+    # 仅列**本车（GS）适用**的。ST/S/RT/R 专有条目未收录。
+    handlebar_clamp_front_nm: 36        # GS/Adventure 2008-on，先拧前螺栓
+    handlebar_clamp_rear_nm: 16         # 同上
+    handlebar_end_weights_nm: 21
+    final_drive_unit_pivot_bolt_nm: 100
+    steering_head_bearing_nut_nm: 130   # GS/RT/R
+    fork_tube_top_stud_nut_nm: 40       # GS/RT/R
+    fork_air_bleed_screw_nm: 3
+    fork_bridge_clamp_bolts_nm: 25      # GS/ST/S
+    front_shock_mounting_bolts_nm: 40   # R/S/ST/GS，上下同值
+    telelever_pivot_shaft_initial_nm: 34
+    telelever_pivot_shaft_final_nm: 45
+    paralever_mounting_front_nm: 19
+    paralever_mounting_rear_nm: 42
+    rear_shock_upper_nut_nm: 43
+    swingarm_lh_bearing_pin_nm: 58
+    swingarm_lh_bearing_pin_locknut_nm: 7
+    side_stand_pivot_bolt_nm: 42
+    source: "B｜Haynes 4598 · 4•2 Torque settings (continued)"
+    page: 153
+    field_sources:
+      side_stand_pivot_bolt_nm:
+        canonical: side_stand_pivot_bolt   # 与第 1 章那条同身份 → 系统自动查冲突
+        source: "B｜Haynes 4•1"
+        page: 152
+      fork_air_bleed_screw_nm:
+        source: |
+          B｜Haynes 4•2。**这一页的标签列与数值列在照片上错开一行**（页面轻微旋转）。
+          映射不是靠肉眼水平对齐定的，用了两重独立校验：
+            ① 跟引导点线：把「Fork air bleed screw」那两行切成极窄带放大，
+               点线明确落在 3 Nm，「Fork tube top stud nut」落在 40 Nm
+            ② 数条目：每个小标题下的条目数必须等于数值数 ——
+               车把段 13 条目对 13 值、前叉段 10 对 10、后悬挂段 13 对 13，全部吻合
+          两重一致才收。放气螺丝 3 Nm 同时也是语义锚点：它不可能是 40。
+        page: 153
+  electrical_system:
+    battery: "12V 14Ah"                    # R1200 GS/ST/S/R；RT 是 19Ah
+    alternator_type: "三相交流，集成稳压/整流"
+    alternator_max_output_w: 720           # 2008-on GS；2004-2007 是 600W
+    accessory_socket_current_a: 5          # GS；RT 是 10A
+    source: "B｜Haynes 4598 · Ch7 Electrical Specifications（7•1）"
+    page: 232
+    field_sources:
+      alternator_type:
+        canonical: alternator_type
+        source: "B｜Haynes 7•1"
+        page: 232
+      battery:
+        source: "B｜Haynes 7•1「Battery: R1200 GS/ST/S/R = 12V 14Ah」。**与 2010 车主手册的 14Ah 一致 —— 跨来源交叉印证**"
+        page: 232
+      alternator_max_output_w:
+        canonical: alternator_max_output_w
+        source: "B｜Haynes 7•1 分档：R1200GS 2004-2007/S = 600W；**R1200GS 2008-on、GS Adv、RT/ST/R = 720W**。本车 2009 取后者"
+        page: 232
+  torque:
+    centre_stand_pivot_bolts_nm: 40          # R1200 GS（RT/ST 是 42，不可混用）
+    cylinder_head_nuts: "1 段 20 Nm → 2 段转角 90° → 末段转角 90°（见正文）"
+    engine_oil_drain_plug_nm: "初 23 → 终 32"
+    engine_oil_filter_nm: 11
+    sump_guard_6mm_nm: 8
+    sump_guard_19mm_nm: 19
+    final_drive_oil_plugs_nm: 20
+    front_brake_caliper_mounting_nm: 30
+    rear_brake_caliper_mounting_nm: 24
+    rear_wheel_mounting_bolts_nm: 60
+    fuel_tank_mounting_nm: 19                # R1200 GS 与 ST
+    gearbox_oil_filler_cap_nm: 30
+    gearbox_oil_drain_plug_nm: 30
+    rocker_shaft_cap_bolts_nm: 18
+    secondary_spark_plug_cover_screws_nm: 8
+    spark_plug_bosch_nm: 23
+    spark_plug_ngk_nm: 20
+    spoke_tension_nm: 4
+    side_stand_pivot_bolt_nm: 56
+    valve_cover_bolts_nm: 10
+    valve_adjuster_locknut_nm: 8
+    source: "B｜Haynes 4598 · Torque settings"
+    page: 22
+    field_sources:
+      final_drive_oil_plugs_nm:
+        canonical: final_drive_oil_plugs
+        source: "B｜Haynes 1•2"
+        page: 22
+      side_stand_pivot_bolt_nm:
+        canonical: side_stand_pivot_bolt   # 与第 4 章那条同身份 → 系统自动查冲突
+        source: "B｜Haynes 1•2"
+        page: 22
+
+# ── 待核实（不得进入作业单）──────────────────────
+specs_pending:
+  # ── 因车型订正而降级的（原为 A 级，出自 2010 手册）──
+  - item: spark_plug.quantity
+    candidate: "4（基于 twin-spark 假设）"
+    level: C
+    note: "车主曾确认「双火花塞」，但当时讨论的前提是 2010 camhead。hexhead 何时起用双塞须以 Haynes 核实"
+  - item: tyre_front
+    candidate: '110/80-19，轮辋 2.50" x 19"，冷胎 2.2/2.5 bar'
+    level: C
+    note: "2010 手册 p159。hexhead 与 camhead 轮胎尺寸可能相同，须核实后才可下单"
+  - item: tyre_rear
+    candidate: '150/70-17，轮辋 4.00" x 17"，冷胎 2.5/2.9 bar'
+    level: C
+    note: "同上"
+
+  # ── 身份本身待核实的项 ──
+  - item: spark_plug.secondary_type_and_count
+    candidate: "推测 2 主 + 2 副 = 4 支；副塞型号未知"
+    level: C
+    note: "Haynes p1•1 只列了一个型号（Bosch YR5LDE / NGK DCPR 8 EKC），
+           但 p43 明确有主塞与副塞两组、且副塞线圈分左右手。
+           **已拍页面没说副塞用什么型号、也没说哪些年份有副塞。**
+           解法不必等书：P2 本来就要拆塞，拆下来的旧塞上印着型号，当场就知道。
+           在此之前只订主塞，副塞看到再补（3 天到货，不卡进度）"
+  - item: ecu_variant
+    candidate: "BMS-K"
+    level: C
+    note: "hexhead 用 BMS-K、camhead 用 BMS-K+。影响诊断设备与故障码字典"
+  - item: abs_variant
+    candidate: "Integral ABS 非助力型"
+    level: C
+    note: "2004-06 为助力式（servo），2007 起取消。2009 应为非助力，须核实 —— 两者排气与复活流程完全不同"
+
+  # ── 原有待核实项（部分因车型订正而改变）──
+  - item: torque.chassis_full_table
+    candidate: ~
+    level: 无
+    note: |
+      Haynes 4•2（PDF p153）「Torque settings (continued)」是一整页底盘/悬挂扭力表
+      （车把夹持、前叉、转向头、终传枢轴、前后减震…），**尚未采集**。
+      按年份分档：车把夹持 GS 2004-2007 与 **2008-on** 是不同值，本车取后者。
+
+      为什么不一次抄完：该页在照片上有轻微倾斜，引导点线与数值列的对齐不可靠。
+      本项目已栽过一次 —— 低分辨率下把 56 Nm 读成 50 Nm。
+      二十多个值批量转录 = 批量制造风险。**要用哪条就单独放大核对哪条。**
+  - item: torque.rear_shock_lower_mounting_nm
+    candidate: "初 50 / 终 20（Haynes 4•2）—— **终值低于初值，反常**"
+    level: C
+    note: |
+      按数条目法映射得到「Initial setting 50 Nm / Final setting 20 Nm」，
+      但终紧扭力低于初紧扭力不合常理（多数序列是初紧后加大到终值）。
+      结构校验过了，语义没过 —— 两重校验不一致时不收。
+      **用之前单独把这两行切窄带放大核一次。**
+  - item: brake_specs_5_1
+    candidate: ~
+    level: 无
+    note: |
+      第 5 章制动规格页（5•1，PDF p183）**左标签列被扫描裁掉了**，
+      值读得出（4.5/4.0mm、320/305mm、DOT4、盘最小厚度等）但配不上标签。
+      制动是安全关键，配不上就不入库。
+      —— 唯一一页有取景问题的。补拍时确保左边距完整（左侧标签不能出框）。
+  - item: vehicle.curb_weight_kg
+    candidate: ~
+    level: C
+    note: "整备质量。安全门禁的举升规则引用它。查 Haynes 04-09 规格页"
+  - item: torque_values
+    candidate: ~
+    level: C
+    note: "✅ 转机：此前归档在「参考-非本车型」的 2005 hexhead 扭力表，**现在属于本车代际**。仍须与 Haynes 04-09 交叉验证后才可升级"
+  - item: oil_filter_pn
+    candidate: ~
+    level: 无
+    note: "⚠️ 搜到的 11427721779 是水冷 LC 件号。现可凭 VIN YOUR_VIN_HERE 在 RealOEM/MAX BMW fiche 查 A 级件号"
+  - item: air_filter_pn
+    candidate: ~
+    level: 无
+    note: "⚠️ 13727726799 同为 LC 件号。同上，凭 VIN 查"
+  - item: drain_plug_washer_pn
+    candidate: ~
+    level: 无
+    note: "换机油必备，容易漏买。凭 VIN 查 fiche"
+
+# ── 本车专有的作业项（按阶段并入通用流程）─────────────
+#
+# 为什么放这里而不是流程文件里：流程是跨车型骨架，
+# 把某台车的召回写进去，另一台车就会收到别人的召回作业项 ——
+# 2026-09-14 监工实测，哈雷确实收到了这三条 BMW 召回，还带 A 级徽章。
+# **隔离要靠结构，不能靠记得过滤。**
+phase_tasks:
+  P1:
+    - id: throttle_plastic
+      name: "⚠️ 节气门拉线塑料轮检查"
+      detail: "NHTSA 2009 投诉原话：塑料拉线轮开裂，毫无预兆彻底失效导致完全失去动力。侧光拍裂纹"
+      source: "NHTSA 2009 投诉 A 级"
+    - id: brake_line_recall
+      name: "⚠️ 前刹车油管（召回 10V276000）"
+      detail: "2007–2009 专有。走线受振动应力→开裂漏油→**前刹车失效**。BMW 免费换带护套新管。报 VIN 查执行状态"
+      source: "NHTSA 召回 A 级"
+    - id: rear_flange
+      name: "⚠️ 后轮法兰（召回 15V141000）"
+      detail: "铝制法兰开裂→后轮可能脱落。BMW 免费换钢件。**骑行前必须确认执行状态**"
+      source: "NHTSA 召回 A 级"
+  P3:
+    - id: fuel_gauge_check
+      name: "⚠️ 燃油表读数核对"
+      detail: "fuel strip 是本车最高频故障，且 2010 之后才改浮子式。通电后把仪表读数与实际油量对一下"
+      source: "NHTSA 2009 投诉 A 级"
+  P5:
+    - id: final_drive_metal
+      name: "⚠️ 终传油查金属屑"
+      detail: "2009 多起终传轴承失效（行驶中脱开）。用白色容器接，铺白纸过滤看残留 —— 这是不拆开唯一能拿到的证据"
+      source: "NHTSA 2009 投诉 A 级"
+      # 本步要用的规格,值由程序现查 specs_usable,不在此硬编
+      specs:
+        - final_drive_oil.capacity_l       # 加油量,少 40ml 正是本车故障模式
+        - torque.final_drive_oil_plugs_nm  # 放/加油螺塞扭力
+
+# ── 作业规程（跨车型有效的安全约定）──
+work_rules:
+  - id: torque-nm-only
+    rule: "所有扭力值一律以 Nm 为准，不做 ft-lb 换算。BMW 曾印错换算值，且被 Clymer/Haynes 沿用"
+
+# ── 研究状态 ────────────────────────────────────────
+# 「查过了，没有」与「从来没查过」是两件事，空列表分不出来。
+# 这两个日期就是用来分的：没有日期 = 没查过，工作台会大声提示。
+recalls_checked_at: 2026-09-14        # NHTSA recallsByVehicle，两种车型写法都查过
+known_issues_checked_at: 2026-09-14   # NHTSA complaintsByVehicle，30 条去重
+
+# ── 未执行的召回（NHTSA 官方，A 级）──────────────────
+# 2026-09-14 按 modelYear=2009 重新查询。与 2010 的清单**不同**。
+open_recalls:
+  - id: 10V276000
+    component: 前刹车油管
+    severity: critical
+    note: "⚠️ **2009 专有，按 2010 查时完全没出现**。2007–2009 R1200/K1200，2006-08~2009-05 生产。
+           走线受振动应力→油管开裂漏油→**前刹车失效**。BMW 免费换带护套新油管。卡 Phase 6/9"
+  - id: 15V141000
+    component: 后轮安装法兰
+    severity: critical
+    note: "2005-2010 R1200GS。法兰开裂→螺栓松动→**后轮可能脱落**。BMW 免费换钢制法兰。卡 Phase 7/9"
+  - id: 13V617000
+    component: 燃油泵法兰
+    severity: critical
+    note: "2005-2011 R 系。开裂漏油→起火风险。卡 Phase 4"
+  - id: 20V471000
+    component: 燃油泵（13V617 后续）
+    severity: critical
+    note: "含 2005-2011 R1200 GS。针对「已按 13V-617 装过支撑环但未换泵」的车。停放期间必然未执行。卡 Phase 4"
+  - id: 17E052000
+    component: 选装转向灯
+    severity: minor
+    note: "仅当装有 BMW 选装转向灯"
+
+# ── 已知故障（A 级 = NHTSA 官方投诉库/召回）──────────
+# 2026-09-14 按 modelYear=2009 重建。2009 有 30 条投诉（2010 仅 8 条）。
+known_issues:
+  - level: A
+    item: 燃油液位传感器(fuel strip)失效
+    symptoms: ["燃油表乱跳", "燃油表读数不准", "以为有油却熄火", "油量警告灯乱亮"]
+    complaints: 11
+    note: "2009 投诉里的绝对主模式。原话「FUEL GAUGE... I RAN OUT OF GAS ON A FREEWAY DURING RUSH HOUR」、
+           「REPLACED 4 TIMES」。**换新后仍会再坏**。
+           有投诉明载「POST 2010 MODELS CHANGED TO FLOAT TYPE SYSTEM」——
+           即本车用的正是易坏的感应条式，2010 之后才改浮子式。**本车比 2010 更严重**"
+  - level: A
+    item: 燃油泵法兰开裂漏油并起火
+    symptoms: ["漏油", "闻到汽油味", "油箱下方渗油", "起火"]
+    complaints: 5
+    note: "2009 投诉中有**两起实际起火**：「spraying fuel onto the hot engine and exhaust pipes
+           causing the Motorcycle to catch on fire」、「did start on fire causing much burn damage」。
+           与召回 13V617000 / 20V471000 互相印证。**P4 燃油作业按已失效对待**"
+  - level: A
+    item: 终传(final drive)失效
+    symptoms: ["后轮异响", "行驶中后部摆动", "后面在晃", "后轮晃", "终传渗油", "换油见金属屑"]
+    complaints: 12
+    diag_tree: final-drive
+    note: "⚠️ **此前写反了**：旧档案称「2010 后改善，本车属改善后批次」——本车是 2009，正在受影响批次内。
+           2009 投诉多起：「FINAL DRIVE BEARING BECAME SEPARATED」(60mph 行驶中)、
+           「CROWN BEARING FAILURE」、「黑油甩满后轮」、「终传油里有金属屑」。
+           **P5 放终传油时必须查金属屑，P7 必须检查终传轴承旷量**"
+  - level: A
+    item: 节气门拉线塑料轮开裂
+    symptoms: ["突然失去动力", "无预兆熄火", "油门无响应"]
+    complaints: 3
+    note: "⚠️ **此前归因写错了**：旧档案称「camhead 特有，hexhead 是金属件」。
+           2009 投诉原话「Throttle cable pulleys made of plastic have cracks.
+           Catastrophic failure will eventually occur with zero warning, causing total loss of power」。
+           本车同样受影响。P1 必须侧光检查"
+  - level: A
+    item: 行驶中突然失去动力
+    symptoms: ["突然失去动力", "加速时熄火", "高速掉速", "没劲", "突然没劲", "动力消失", "跑着跑着没力"]
+    complaints: 6
+    note: "多条 2009 投诉：高速超车时突然失去动力、3 挡加速时失去动力并熄火。
+           与燃油系统问题可能同源，也可能独立。P8/P9 留意"
+  - level: C
+    item: 悬挂漏油
+    symptoms: ["前叉渗油", "后减震渗油", "悬挂发软"]
+    complaints: 2
+    note: "「MANY MOTORCYCLE COMPLAINT ON SUSPENSION LEAKING PROBLEMS, WITH VERY LOW MILES」。
+           P7 前叉与后减震按可能已渗漏对待，压下去看阻尼与油迹"
+  - level: C
+    item: 燃油泵控制器(FPC)腐蚀
+    note: "安装位置积水导致腐蚀，十年停放后大概率有问题。沿用自旧档案，未在 2009 投诉中单独出现"
+  - level: C
+    item: 进气橡胶套老化开裂
+    note: "导致怠速不稳和空气计量错误。停放车高频故障"
+
+vlog_path: "~/Documents/04_瓜皮巨甜/01_两个人 两个轮 《Two Souls, One Bike》/维修_2010 BMW R1200GS/80_Vlog"

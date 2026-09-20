@@ -1,0 +1,65 @@
+# 排查树 —— 点火系统（双火花塞）
+#
+# 本车每缸**两个火花塞**（主 primary + 副 secondary），左右各一套线圈。
+# 这带来一个容易踩的坑：副塞位置隐蔽、扭力值与主塞不同、且**副塞型号目前档案里没有**。
+# 树里凡涉及副塞的地方都显式提醒，不让人按主塞的数据去拧副塞。
+
+id: ignition-system
+symptom: "转得欢但不着火 / 单缸工作 / 怠速抖 / 加速无力回火"
+applies_to_generations: [hexhead]
+severity: 卡关键路径
+related_issues:
+  - "停放十年：火花塞积碳/锈蚀、线圈胶皮老化开裂漏电都很常见"
+  - "副塞型号档案里是缺的 —— P2 拆塞时读旧塞上的印字，当场补进档案"
+
+cross_check:
+  - "先确认已排除燃油侧（拆塞看是否潮湿有汽油味）——干燥说明油没到，查点火是白查"
+
+steps:
+  - id: plug-condition
+    check: "拆火花塞，看电极状态：积碳、锈蚀、油湿、烧蚀、绝缘体裂纹"
+    expect: "电极完好、无裂纹；停放车常见锈迹与积碳"
+    basis: "B｜Haynes 4598 第 1 章「读火花塞状态」"
+    if_fail: "绝缘体有裂纹或电极烧蚀 → 换；本车主塞型号 spec:spark_plug.type"
+    if_pass: "外观可用 → next: plug-gap"
+    note: "⚠️ 拆之前先拍照记录哪个塞来自哪缸 —— 塞的状态是停放前燃烧状况的唯一证据，混了就没了"
+    gated: true
+
+  - id: plug-gap
+    check: "用塞尺量火花塞间隙"
+    expect: "spec:spark_plug.gap_standard_mm"
+    basis: "spec:spark_plug.gap_standard_mm"
+    if_fail: "超出 spec:spark_plug.gap_service_limit_mm 的使用极限 → 换新，不要掰回来将就"
+    if_pass: "间隙合格 → next: coil-primary"
+    note: "这是**主塞**的间隙值。副塞数据档案里没有，别套用"
+
+  - id: coil-primary
+    check: "万用表电阻档，量点火线圈**初级**绕组电阻"
+    expect: "spec:ignition_coil.primary_winding_ohms"
+    basis: "spec:ignition_coil.primary_winding_ohms"
+    if_fail: "偏离标称很多（开路/短路）→ 线圈报废"
+    if_pass: "初级正常 → next: coil-secondary"
+    note: "量之前断开插头。冷态量，热态阻值会漂"
+
+  - id: coil-secondary
+    check: "量点火线圈**次级**绕组电阻"
+    expect: "spec:ignition_coil.secondary_winding_kohms"
+    basis: "spec:ignition_coil.secondary_winding_kohms"
+    if_fail: "开路或远离标称 → 线圈报废"
+    if_pass: "线圈电阻都正常但仍无火 → next: coil-supply"
+
+  - id: coil-supply
+    check: "起动时量线圈供电端有无电压（点火开关 ON + 起动）"
+    expect: "应有电瓶电压级别的供电；无电压说明上游断（保险/继电器/ECU 驱动）"
+    basis: "circuit:267"
+    if_fail: "无供电 → 沿图往上游查：中央电子单元、起动/充电回路"
+    if_pass: "有供电、线圈阻值正常、塞也好 → 怀疑 ECU 点火驱动或曲轴/凸轮位置传感器"
+    note: "p267 图上能直接看到主/副点火线圈与各缸火花塞的接线，以及曲轴/凸轮位置传感器"
+
+  - id: reassemble-torque
+    check: "装回火花塞，按规定扭力"
+    expect: "主塞按品牌分档：Bosch spec:torque.spark_plug_bosch_nm / NGK spec:torque.spark_plug_ngk_nm"
+    basis: "spec:torque.spark_plug_bosch_nm"
+    if_fail: "拧过头会拉伤缸盖螺纹 —— 铝合金缸盖，这是不可逆损伤"
+    note: "⚠️ **两个品牌扭力值不同**，先看你手上是哪个牌子。副塞盖板螺丝另有扭力 spec:torque.secondary_spark_plug_cover_screws_nm"
+    gated: true

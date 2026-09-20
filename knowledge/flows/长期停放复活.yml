@@ -1,0 +1,162 @@
+# 长期停放复活流程 —— 跨车型通用（GS 与 XL1200 都适用）
+#
+# 顺序不可调换。每个阶段的 gates 是**确定性规则**，不由模型裁量。
+#
+# ⚠️ 本文件是**跨车型骨架**，只放任何摩托车都适用的作业项。
+#    车辆专有的检查（某车的召回、某代的设计缺陷）放在各车 VEHICLE.yml 的
+#    `phase_tasks:` 里，由 workbench 合并。
+#
+#    2026-09-14 监工实测：此前 BMW 的召回检查写在这里，结果
+#    `workbench -v 2014-HD-XL1200`（哈雷）返回了三条 BMW 召回作业项，
+#    还带着「NHTSA A 级」徽章。**隔离要靠结构，不能靠记得过滤。**
+# 车辆特有的硬红线另见各车 VEHICLE.yml 的 hard_rules，两者叠加显示。
+
+id: long-storage-revival
+name: 长期停放复活
+applies_to: [motorcycle]
+note: 针对停放数年以上、期间未启动的车辆
+
+phases:
+  - id: P0
+    name: 建资料库与工作台
+    touch_vehicle: false
+    summary: 不碰车。把手册、工具、流程准备好
+    gates: []
+    tasks:
+      - {id: docs,    name: 手册来源索引与数字化}
+      - {id: tools,   name: 工具链就位}
+      - {id: shoot,   name: 拍摄规范（含一次性镜头清单）}
+
+  - id: P1
+    name: 静态评估
+    touch_vehicle: true
+    summary: 第一次碰车，只看不拆
+    gates:
+      - {level: GATE, rule: "不插钥匙、不通电 —— 通电是 P3 的事，且必须先装新电池"}
+      - {level: GATE, rule: "动任何东西之前先拍照 —— 原始状态只有一次"}
+    tasks:
+      - {id: vin,      name: 采集 VIN 全码,  detail: "车架右侧转向管附近钢印", hint: "微距 + 侧光。正面光拍不出钢印"}
+      - {id: plate,    name: 铭牌与生产日期}
+      - {id: odo,      name: 里程读数}
+      - {id: env,      name: 停放环境记录,   detail: "室内外 / 是否盖布 / 当地气候"}
+      - {id: eight,    name: 全车八方位照,   detail: "每 45° 一张，相机高度固定在车辆中轴线"}
+      - {id: detail,   name: 系统特写,       detail: "轮胎DOT码/前后刹/前叉/发动机/终传/排气/油箱内壁/座垫下诊断口/仪表/线束"}
+      - {id: tyre_age, name: 轮胎 DOT 生产周期码, detail: "4 位数字，如 3215 = 2015 年第 32 周"}
+      - {id: report,   name: 目视诊断报告}
+
+  - id: P2
+    name: 发动机能否自由转动
+    touch_vehicle: true
+    summary: 上电之前必须确认能转
+    gates:
+      - {level: GATE,  rule: "顺序上必须在通电之前"}
+      - {level: BLOCK, rule: "手动盘车转不动时，绝不能用起动机拖 —— 会拉伤缸壁"}
+    tasks:
+      - {id: plugs_out, name: 拆火花塞}
+      - {id: plug_read, name: 读火花塞状态, detail: "电极积碳/锈迹/油渍反映停放前的燃烧状况，拍照"}
+      - {id: penetrate, name: 缸内注渗透油并静置}
+      - {id: turn,      name: 用扳手手动盘车}
+
+  - id: P3
+    name: 电气复活与故障码基线
+    touch_vehicle: true
+    summary: 装新电池，建立故障码基线
+    gates:
+      - {level: GATE, rule: "必须先装新电池或接稳压电源 —— 亏电会吐出大量假故障码"}
+    tasks:
+      - {id: battery,  name: 装新电池}
+      - {id: scan1,    name: 首次全模块扫描}
+      - {id: clear,    name: 清码}
+      - {id: scan2,    name: 复扫}
+      - {id: baseline, name: 取差集 = 真实故障, detail: "这是整套流程里最有价值的一步"}
+
+  - id: P4
+    name: 燃油系统
+    touch_vehicle: true
+    summary: 十年的汽油已成胶质，这是主战场
+    gates:
+      - {level: GATE, rule: "燃油系统作业：确认灭火器、通风、断电、无火源"}
+      - {level: GATE, rule: "只用固定机位记录，不手持拍摄、不边做边讲解"}
+    tasks:
+      - {id: tank,     name: 油箱内锈蚀与残油}
+      - {id: pump,     name: 燃油泵与滤网}
+      - {id: fpc,      name: 燃油泵控制器检查, detail: "这代车著名故障点，安装位置积水致腐蚀"}
+      - {id: injector, name: 喷油嘴}
+      - {id: hoses,    name: 燃油管与快接头 O 环}
+
+  - id: P5
+    name: 润滑系统
+    touch_vehicle: true
+    summary: 全换，无论看起来如何
+    gates: []
+    tasks:
+      - id: engine_oil
+        name: 机油与滤芯
+        specs:
+          - engine_oil.capacity_l
+          - engine_oil.type
+          - torque.engine_oil_drain_plug_nm
+          - torque.engine_oil_filter_nm
+      - id: final_dr
+        name: 终传油
+        specs:
+          - final_drive_oil.capacity_l
+          - final_drive_oil.type
+          - torque.final_drive_oil_plugs_nm
+      - id: gearbox
+        name: 变速箱油
+        specs:
+          - gearbox_oil.capacity_l
+          - gearbox_oil.type
+          - torque.gearbox_oil_drain_plug_nm
+          - torque.gearbox_oil_filler_cap_nm
+
+  - id: P6
+    name: 制动系统
+    touch_vehicle: true
+    summary: 刹车油吸湿十年，可能已腐蚀卡钳与泵体
+    gates:
+      - {level: GATE, rule: "制动系统最终装配：扭力值必须来自 A/B 级来源，且确认排气完成"}
+      - {level: GATE, rule: "只用固定机位记录，不边做边讲解"}
+    tasks:
+      - id: flush
+        name: 彻底冲洗刹车油
+        specs:
+          - brake_fluid.spec
+          - torque.front_brake_caliper_mounting_nm
+          - torque.rear_brake_caliper_mounting_nm
+      - {id: caliper,  name: 卡钳拆检}
+      - {id: abs_bleed, name: ABS 循环排气, detail: "非 servo 系统，常规方法可排气；诊断仪的阀循环功能确保泵内无残留"}
+
+  - id: P7
+    name: 行走与传动
+    touch_vehicle: true
+    summary: 轮胎必换，不可协商
+    gates:
+      - {level: GATE, rule: "举升作业：确认支撑方式、重心、防倾倒；举升时人不能分心"}
+    tasks:
+      - {id: tyres,   name: 更换轮胎}
+      - {id: susp,    name: 悬挂检查}
+      - {id: shaft,   name: 传动轴}
+      - {id: clutch,  name: 离合器, detail: "干式离合可能锈死粘连"}
+
+  - id: P8
+    name: 首次启动
+    touch_vehicle: true
+    summary: 不逐项确认不点火
+    gates:
+      - {level: GATE, rule: "走完整前置检查单，逐项打勾才点火"}
+    tasks:
+      - {id: precheck, name: 启动前检查单}
+      - {id: start,    name: 点火}
+      - {id: rescan,   name: 启动后复扫}
+
+  - id: P9
+    name: 磨合与路试
+    touch_vehicle: true
+    summary: 收尾
+    gates: []
+    tasks:
+      - {id: runin,  name: 磨合}
+      - {id: road,   name: 路试}
+      - {id: final,  name: 最终复扫与归档}

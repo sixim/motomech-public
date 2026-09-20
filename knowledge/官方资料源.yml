@@ -1,0 +1,127 @@
+# 厂商官方资料源注册表
+#
+# 用途：让 acquire 对每个厂牌给出**经过验证的直达 URL**，而不是丢一个搜索引擎链接。
+#
+# ── 2026-09-16 逐厂牌实测的总结论 ────────────────────────────────
+# **没有任何一个摩托车厂牌提供可机器查询的官方手册书号接口。**
+# 全部是 JS 渲染的商店页或直接封机器人。逐条证据见每项的 verified 字段。
+# 所以本表里每一条都是 kind: link（人去点），machine_callable 一律 false。
+# 谁将来想把它们改成 http_json，先看这里的实测记录，别重走一遍。
+#
+# ⚠️ 验证方法本身的教训：只看 HTTP 200 + 关键词命中会被骗。
+#    实测 Cyclepedia 搜索页 200 且「ducati」命中 11 次，
+#    抓出真实产品名后一本 Ducati 手册都没有 —— 命中全在页脚模板里。
+#    所以下面每条都记了 title 或实际内容特征，不只记状态码。
+
+sources:
+  # ── 多厂牌官方出版物发行商 ──
+  - id: helm
+    brands: [honda, acura, ford, gm, chrysler, isuzu]
+    name: "Helm Inc —— 多家 OEM 的官方出版物指定发行商"
+    url: "https://www.helminc.com/"
+    gives: "官方服务手册（可按 厂/型/年 检索，也可按书号直接反查）"
+    source_level: A
+    machine_callable: false
+    verified: "2026-09-16 HTTP 200。有两个真表单：mmy_search_form(厂/型/年)
+               与 word_search(字段名 sku，是按书号反查不是关键词搜)。
+               厂牌下拉由 JS 填充(HMKF_NAME)，未找到喂数据的端点；
+               直接 POST search2result.asp 返回 411 Length Required。
+               → 人能用，机器不好用。"
+
+  - id: yamaha_pubs
+    brands: [yamaha]
+    name: "Yamaha Manual Store —— 雅马哈官方出版物"
+    url: "https://www.yamahapubs.com/home/search?search={model}"
+    gives: "官方服务手册/零件目录（LIT- 开头书号）"
+    source_level: A
+    machine_callable: false
+    verified: "2026-09-16 GET 上面的 URL 模式 HTTP 200，title「YAMAHA MANUAL STORE」。
+               结果列表由 JS 渲染，静态抓不到书号。URL 模式本身可用，直接带人到结果页。"
+
+  - id: hd_serviceinfo
+    brands: [harley-davidson, harley, hd]
+    name: "H-D Service Information Portal —— 哈雷官方服务信息门户"
+    url: "https://serviceinfo.harley-davidson.com/"
+    gives: "官方服务手册、电路图、TSB（部分内容需经销商账号）"
+    source_level: A
+    machine_callable: false
+    verified: "2026-09-16 HTTP 200，title「H-D Service Information Portal」。
+               注意：harley-davidson.com/us/en/shop/c/manuals 与 /service-manuals 均 404，
+               别再往那两个路径试。"
+
+  - id: ktm_manuals
+    brands: [ktm, husqvarna, gasgas]
+    name: "KTM 官方手册页"
+    url: "https://www.ktm.com/en-int/service/manuals.html"
+    gives: "用户手册/维修资料入口"
+    source_level: A
+    machine_callable: false
+    verified: "2026-09-16 HTTP 200，页面上直接出现 KTM 书号样式(如 48-02353)。"
+
+  # ── 封机器人但站点存在（人能用）──
+  - id: ducati_official
+    brands: [ducati]
+    name: "Ducati 官方 Use & Maintenance"
+    url: "https://www.ducati.com/ww/en/services/use-and-maintenance"
+    gives: "官方用户手册下载；工作手册需经销商订购"
+    source_level: A
+    machine_callable: false
+    verified: "2026-09-16 HTTP 403 Access Denied（封机器人）。站点存在，人可访问。"
+
+  - id: honda_powersports
+    brands: [honda]
+    name: "Honda Powersports 车主页"
+    url: "https://powersports.honda.com/owners"
+    gives: "用户手册；官方服务手册走 Helm（见 helm 条）"
+    source_level: A
+    machine_callable: false
+    verified: "2026-09-16 HTTP 403（封机器人）。服务手册的实际购买路径是 Helm。"
+
+  - id: bmw_motorrad
+    brands: [bmw]
+    name: "BMW Motorrad 官网 / 经销商 AOS"
+    url: "https://www.bmw-motorrad.com/"
+    gives: "用户手册；维修手册(RepROM)历来只发给经销商"
+    source_level: A
+    machine_callable: false
+    verified: "2026-09-16 www.bmw-motorrad.com/en/home.html 与 aos.bmwmotorcycles.com
+               均返回 000（连不上/被拦）。**本条 URL 未能实测通过**，如实记录。
+               本车(R1200GS)的实际可用路径是 Haynes 4598(已有) + RealOEM fiche。"
+
+  # ── 爆炸图 / 件号 fiche ──
+  - id: realoem
+    brands: [bmw]
+    name: "RealOEM —— BMW 官方件号爆炸图"
+    url: "https://www.realoem.com/bmw/enUS/"
+    gives: "按 VIN 精确到本车配置的件号与爆炸图"
+    source_level: A
+    machine_callable: false
+    verified: "2026-09-16 HTTP 403（封机器人）。人可访问，项目已长期使用。"
+
+  - id: cmsnl
+    brands: [_any]
+    name: "CMSNL —— 多厂牌爆炸图与件号"
+    url: "https://www.cmsnl.com/search/?q={model}"
+    gives: "爆炸图 + 件号 + 现货价"
+    source_level: B
+    machine_callable: false
+    verified: "2026-09-16 上面的搜索 URL 模式 HTTP 200。
+               注意 /ducati-motorcycles/gt1000_2008/ 这类猜测路径是 404，只用搜索式入口。"
+
+  - id: motorcycleinfo
+    brands: [bmw]
+    name: "motorcycleinfo.co.uk —— R1200 系列技术站"
+    url: "https://www.motorcycleinfo.co.uk/"
+    gives: "图文教程，很多 BMW 专项作业的事实标准"
+    source_level: C
+    machine_callable: false
+    verified: "2026-09-16 HTTP 200，title「Welcome to Motorcycle Info.co.uk」。
+               非官方 → C 级，绝不进作业单。"
+
+# ── 试过但**不要再试**的路径（省得后人重走）──
+dead_ends:
+  - "cyclepedia.com —— 搜 ducati 返回 200 且关键词命中 11 次，但实际没有任何 Ducati 手册"
+  - "haynes.com/en-us/search?q=ducati —— 200 但 JSON 里 0 条 Ducati 产品（JS 渲染）"
+  - "partzilla.com / fowlers.co.uk —— 403 封机器人"
+  - "harley-davidson.com/us/en/shop/{c/manuals,service-manuals} —— 均 404"
+  - "triumphmotorcycles.com/owners/owners-handbooks —— 404（域名本身活着）"

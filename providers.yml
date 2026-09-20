@@ -1,0 +1,44 @@
+# 模型接入配置 —— 平台级，与车辆无关
+#
+# 两种通道（见计划「三、架构 · 模型接入」）：
+#   openai      OpenAI 兼容 HTTP。主力，可流式、参数可控。
+#               指向谁都行：LM Studio / OpenRouter / Anthropic / hermes proxy
+#   hermes_cli  Hermes CLI 子进程（hermes -z）。**用上订阅模型的唯一路径**
+#               代价：每次起进程、无流式、参数控制有限
+#
+# ⚠️ 已核实：hermes proxy 只支持 nous + xai，**不能代理 Claude/ChatGPT 订阅**
+#    （`hermes proxy providers` 实测）。订阅模型只能走 hermes_cli。
+
+default: local
+
+providers:
+  - id: local
+    kind: openai
+    base_url: http://localhost:1234/v1
+    model: qwen/qwen3.8-27b
+    # ⚠️ Qwen3.8 是推理模型，思考先吃 token。给少了 content 会是空字符串。
+    max_tokens: 2500
+    note: LM Studio 本地 · 已验证可看图 · 离线可用
+
+  - id: local-fast
+    kind: openai
+    base_url: http://localhost:1234/v1
+    model: qwen2.5-14b-instruct-abliterated-v2-mlx
+    max_tokens: 1200
+    note: 本地小模型 · 非推理模型，快
+
+  - id: hermes
+    kind: hermes_cli
+    # ⚠️ 单次覆盖模型，**不改** ~/.hermes/config.yaml（那会影响其他项目）。
+    #    Hermes 要求模型上下文 ≥64K，而 config.yaml 里写死 context_length: 32768，
+    #    低于 qwen3.5-27b-derestricted 的实际值 64000 —— 是配置值偏低，不是模型不够。
+    model: qwen/qwen3.8-27b        # 131072 上下文
+    note: 订阅模型唯一路径（Claude Max / ChatGPT）· 慢、无流式
+
+  - id: openrouter
+    kind: openai
+    base_url: https://openrouter.ai/api/v1
+    model: anthropic/claude-sonnet-4.5
+    api_key_env: OPENROUTER_API_KEY
+    max_tokens: 2000
+    note: 按 token 付费 · 需设环境变量

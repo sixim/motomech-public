@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.simon.repairbench.serve</string>
+
+  <!-- 指向 bin/ 下的稳定副本，不指 target/ ——
+       target/ 是构建产物目录，cargo clean 会清掉它，那样服务会无声断掉。 -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>REPAIRBENCH_ROOT/bin/repairbench</string>
+    <string>serve</string>
+    <string>--host</string><string>127.0.0.1</string>
+    <string>--port</string><string>8765</string>
+  </array>
+
+  <!-- 只绑回环。对外由 tailscale serve 代理，访问控制交给 Tailscale ACL。 -->
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+  <key>ThrottleInterval</key><integer>10</integer>
+
+  <key>WorkingDirectory</key><string>REPAIRBENCH_ROOT</string>
+  <key>StandardOutPath</key><string>REPAIRBENCH_ROOT/logs/serve.out.log</string>
+  <key>StandardErrorPath</key><string>REPAIRBENCH_ROOT/logs/serve.err.log</string>
+  <key>ProcessType</key><string>Background</string>
+</dict></plist>

@@ -1,0 +1,48 @@
+[package]
+name = "repairbench"
+version = "0.1.0"
+description = "维修助理 —— 手册知识库 · 诊断 · 作业单 · MCP/HTTP 接口"
+authors = ["Simon"]
+edition = "2021"
+
+[lib]
+name = "repairbench_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# ── 桌面壳 ──
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+
+# ── 多模式入口 ──
+clap = { version = "4.5", features = ["derive", "env"] }
+
+# ── 存储（只作索引，文件仍是真相源）──
+rusqlite = { version = "0.38", features = ["bundled", "chrono"] }
+
+# ── 序列化 ──
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml_ng = "0.10"
+
+# ── 通用 ──
+anyhow = "1.0"
+thiserror = "2.0"
+chrono = { version = "0.4", features = ["serde", "clock"] }
+directories = "6.0"
+
+# ── serve 模式（HTTP API）──
+axum = { version = "0.8", features = ["json", "macros", "multipart"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "blocking"] }
+tower-http = { version = "0.6", features = ["cors"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

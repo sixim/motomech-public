@@ -1,0 +1,165 @@
+# 安全门禁规则表 —— 确定性规则，不由模型裁量
+#
+# 三级语义（照抄流程文件的既有约定，不新造词）：
+#   BLOCK  绝不可做。**不返回执行步骤**，MCP 调用方也拿不到。
+#   GATE   有前置条件才可做。前置未满足则拦住，并告知怎么解锁。
+#   WARN   可以做，但有代价明确的风险，必须先知道。
+#
+# 每条规则必须有 basis（出处），出处只能是本项目里已有的 A/B 级事实：
+#   VEHICLE.yml 的 hard_rules / open_recalls / known_issues
+#   flows 的 gates
+#   knowledge/ 下已成文的 A/B 级文档
+# 没有出处的规则不许进这张表 —— 否则门禁本身就成了 D 级推测。
+#
+# 匹配规则：中文按子串匹配；英文短词（<4 字符）按词边界匹配，
+# 避免 "can" 命中 "cancel"（这是适用性过滤踩过的坑，同一套办法）。
+
+# 作用域：
+#   不写 `vehicles:` = 通用规则，任何摩托车都适用
+#   写了 `vehicles: [id, ...]` = 只对这几台车成立
+#
+# 为什么要有这个：本表的多数规则是围绕 2009 BMW 写的。
+# 把「后轮法兰召回」这种一车一款的规则套到哈雷身上，
+# 要么误拦、要么（更糟）让人以为门禁覆盖了那台车，其实没有。
+# 监工 2026-09-14-c 抓到的多车隔离问题是同一个根源。
+
+version: 1
+
+rules:
+  # ───────────────────────── BLOCK ─────────────────────────
+  - id: crank-before-hand-turn
+    level: BLOCK
+    match: [打火, 点火, 启动发动机, 起动机, 打着, 发动车, 试着发动, crank, starter, start the engine]
+    exclude_match: [点火线圈, 点火开关, ignition coil]
+    unless_phase_reached: P3        # P2 完成（即已进入 P3 及以后）才解除
+    reason: |
+      boxer 是水平对置缸，停放十年油膜早已从缸壁流失，缸壁可能已锈蚀。
+      未经手动盘车确认能自由转动就用起动机拖，会直接拉伤缸壁 —— 这是不可逆损伤，
+      修起来等于开缸。
+    unblock: 先完成 P2：拆火花塞 → 缸内注渗透油静置 → 用扳手手动盘车确认能自由转动。
+    basis: VEHICLE.yml hard_rules#hand-turn-before-starter
+
+  - id: crank-with-old-fuel
+    level: BLOCK
+    match: [打火, 点火, 启动, 发动车, 发动起来, 发着, 试试能不能着, start, crank]
+    # 「发动」曾在这里，结果「清洗发动机壳体」被判 BLOCK。名词吞掉动词，
+    # 误报会训练人无视门禁 —— 见 判定用例.yml
+    exclude_match: [点火线圈, 点火开关, ignition coil]
+    unless_task_done: fuel_drain
+    reason: |
+      十年的汽油已经变质成胶质。直接打火会把胶质泵进喷油嘴和燃油泵，
+      把一个「换油就好」的问题变成「换泵换嘴」的问题。
+    unblock: 先完成 P4：抽空旧油、清洗油箱、检查燃油泵与滤网，加新油。
+    basis: VEHICLE.yml hard_rules#no-crank-first
+
+  - id: force-crank-stuck-engine
+    level: BLOCK
+    match: [转不动, 盘不动, 卡死, 拖一下, 硬转, 大力, seized, stuck]
+    always: true                    # 任何阶段都成立，无解锁条件
+    reason: |
+      手动盘车转不动 = 活塞与缸壁已锈死或有异物。此时任何加力（起动机、加长杆、
+      敲击）都是在拉伤缸壁或掰弯连杆。
+    unblock: 没有「解锁」。转不动就是停下来，继续注渗透油延长静置，或开缸检查。
+    basis: flows P2 gates#BLOCK
+
+  - id: ride-before-flange-recall
+    vehicles: [2009-BMW-R1200GS]   # 本车专有：出处是这台车的召回/投诉记录
+    level: BLOCK
+    match: [骑, 上路, 试车, 路试, 开出去, 遛一圈, ride, road test, test ride]
+    unless_recall_done: 15V141000
+    reason: |
+      召回 15V141000：铝制后轮法兰会开裂，**后轮可能在行驶中脱离**。
+      这是致命级缺陷，BMW 免费更换为钢件。
+    unblock: 打 1-800-525-7417 报 VIN 查这台车的召回执行状态；未执行则先去 BMW 免费更换。
+    basis: VEHICLE.yml open_recalls#15V141000 (NHTSA A 级)
+
+  # ───────────────────────── GATE ─────────────────────────
+  - id: power-before-new-battery
+    level: GATE
+    match: [通电, 插钥匙, 上电, 打开电门, 点亮仪表, power on, ignition on]
+    unless_phase_reached: P3
+    reason: |
+      亏电状态下给 CAN-bus 车通电，ZFE/BMS-K+/ABS/仪表会因欠压吐出大量假故障码，
+      污染故障码基线 —— 之后你分不清哪个码是真故障、哪个是亏电噪声。
+    unblock: 装新电池或接稳压电源后再通电。顺序上还必须在 P2（确认能盘车）之后。
+    basis: VEHICLE.yml hard_rules#battery-before-scan ＋ flows P1 gates
+
+  - id: scan-before-new-battery
+    level: GATE
+    match: [读故障码, 扫描, 读码, 诊断仪, GS-911, scan, read codes, dtc]
+    unless_phase_reached: P3
+    reason: 同上 —— 亏电会让扫描结果不可信，建立出来的基线是废的。
+    unblock: 先装新电池，通电稳定后再做首扫。
+    basis: VEHICLE.yml hard_rules#battery-before-scan
+
+  - id: fuel-work-safety
+    level: GATE
+    match: [燃油, 汽油, 油箱, 喷油嘴, 燃油泵, 抽油, fuel, petrol, gasoline]
+    # 读燃油表不是燃油作业，要求先摆灭火器属于误报
+    exclude_match: [燃油表, 油量表, fuel gauge, fuel level]
+    require_confirm: [灭火器就位, 通风良好, 已断电瓶负极, 周围无火源无明火]
+    reason: 汽油蒸气比空气重、会积在地面，遇火花即燃。停放十年的油箱内还有胶质与蒸气。
+    unblock: 逐项确认上述四条后继续。
+    basis: flows P4 gates#GATE
+
+  - id: brake-final-assembly
+    level: GATE
+    match: [刹车, 制动, 卡钳, 刹车盘, 刹车油, brake, caliper, bleed]
+    require_source_level: [A, B]
+    reason: |
+      制动是唯一「装错了会死人」的系统。扭力值必须来自 A/B 级来源并回原图核对，
+      C 级社区数值绝不可用于最终装配。
+    unblock: 从 repair.spec 取带页码的 A/B 级扭力值；装配后必须确认排气完成、手感无空行程。
+    basis: flows P6 gates#GATE ＋ 来源分级 G1
+
+  - id: lifting
+    level: GATE
+    match: [举升, 抬起, 支车, 千斤顶, 吊起, lift, jack, hoist]
+    require_confirm: [支撑点正确, 重心稳定, 有防倾倒措施, 举升时不分心做别的]
+    reason: |
+      GS 是高重心的大排量 ADV，整备质量远超单人可控范围（**确切数字尚未核实，
+      见 specs_pending#curb_weight —— 这里不写未经核实的数字**）。
+      倾倒会砸人，也会砸坏缸头护杠保护不到的部位。
+    unblock: 逐项确认后继续。
+    basis: flows P7 gates#GATE
+
+  # ───────────────────────── WARN ─────────────────────────
+  - id: throttle-plastic-ear
+    vehicles: [2009-BMW-R1200GS]   # 本车专有：出处是这台车的召回/投诉记录
+    level: WARN
+    match: [节气门, 油门拉线, 节流阀, 拉线, throttle, throttle body, cable]
+    reason: |
+      ⚠️ 2026-09-14 订正：此前写的是「camhead 特有、hexhead 是金属件」—— **归因错了**。
+      本车是 2009 hexhead，而 2009 的 NHTSA 投诉原话就是
+      「Throttle cable pulleys made of plastic have cracks.
+      Catastrophic failure will eventually occur with zero warning, causing total loss of power」。
+      本车同样受影响，而且停放十年后塑料已老化。施力时格外轻。
+    unblock: 不阻止作业。先侧光拍一张裂纹记录，施力方向顺着拉线不要侧掰。
+    basis: VEHICLE.yml known_issues（NHTSA 2009 投诉 A 级）
+
+  - id: magnesium-alkaline
+    level: WARN
+    match: [清洗剂, 碱性, 除油, 抛光, 打磨, 镁, 铝, degreaser, alkaline, polish]
+    reason: |
+      **镁和铝对 pH 的要求是相反的**：镁件（本车部分发动机壳体）需要碱性 pH 10.5–12
+      来维持钝化膜，酸性会侵蚀它；而铝件恰恰怕碱，强碱会把铝表面咬花。
+      用错一瓶清洗剂就能毁掉一个壳体，且不可逆。
+    unblock: 先确认该部位是镁还是铝，再查 knowledge/翻新工艺/材料与清洁剂兼容性.md 选清洗剂。
+    basis: knowledge/翻新工艺/材料与清洁剂兼容性.md
+
+  - id: photo-before-disassembly
+    level: WARN
+    match: [拆, 卸, 分解, 取下, remove, disassemble, teardown]
+    reason: 原始状态只有一次。拆完再想起来「本来是怎么走线的」就晚了。
+    unblock: 拆之前拍：整体关系一张、接口特写一张、走线/走管路径一张。
+    basis: flows P1 gates#GATE
+
+  - id: fuel-gauge-trust
+    vehicles: [2009-BMW-R1200GS]   # 本车专有：出处是这台车的召回/投诉记录
+    level: WARN
+    match: [燃油表, 油量, 剩多少油, fuel gauge, fuel level]
+    reason: |
+      fuel strip（燃油液位传感器）是这台车最高频的故障（NHTSA 投诉 8 条中占 4 条），
+      且**换了还会再坏**。读数不可信 —— 有车主因此在路上没油。
+    unblock: 不以仪表读数为准。按里程算，或直接开盖目视。
+    basis: VEHICLE.yml known_issues（NHTSA 投诉 A 级）

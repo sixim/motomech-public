@@ -1,0 +1,232 @@
+# 采购清单 —— 按到货周期倒排
+#
+# 这张表要回答的不是「要买什么」，而是「**今天必须下单的是哪几样**」。
+# 十年停放车的典型卡点不是技术，是等件：轮胎在 P7 才用，但如果等到 P7 才订，
+# 你会在车已经拆开的状态下干等两周。
+#
+# 倒排规则：最晚下单日 = 该阶段预计开工日 − 到货周期。
+# 工具按「最晚下单日」升序排，排在最前面的就是今天该下单的。
+#
+# 字段：
+#   spec_ref       规格来自本平台哪条已核实数据（A/B 级）。**没有 spec_ref 的不许写规格数字**
+#   part_number    件号及其来源级别。查不到就写 null 并在 blocked_by 说明怎么查
+#   lead_time_days 到货周期（保守值 —— 宁可早到，不可晚到）
+#   needed_phase   哪个阶段要用
+#   status         未订 / 已订 / 已到 / 不需要
+#   why            为什么必须换（而不是「看情况」）
+#   needs_choice   等你拍板（选型偏好），不是等前置动作 —— 这两种等待性质不同，别混为一谈
+
+vehicle: 2009-BMW-R1200GS
+currency: USD
+note: 价格是量级参考，不是报价。下单前按当时行情核。
+
+items:
+  # ───── 到货周期最长，最先下单 ─────
+  - id: tyre_front
+    name: 前轮胎
+    spec: "110/80-19（待核实：尺寸出自 2010 手册，本车为 2009）"
+    spec_ref: null
+    qty: 1
+    lead_time_days: 14
+    needed_phase: P7
+    status: 未订
+    why: |
+      橡胶老化是化学过程，与里程无关。停放十年且长期单点承重，接地面已有硬点。
+      **结论已定：必换。** DOT 码只用于记录这条胎有多老，不改变结论。
+    est_cost: 150
+    needs_choice: 花纹与品牌由你定 —— 尺寸规格是 A 级事实，选型是偏好，我不替你定
+
+  - id: tyre_rear
+    name: 后轮胎
+    spec: "150/70-17（待核实：尺寸出自 2010 手册，本车为 2009）"
+    spec_ref: null
+    qty: 1
+    lead_time_days: 14
+    needed_phase: P7
+    status: 未订
+    why: 同前胎
+    est_cost: 200
+    needs_choice: 同前胎 —— 前后最好同品牌同系列，混搭会让前后抓地特性不一致
+
+  - id: battery
+    name: 电瓶
+    spec: "12V · 14Ah · AGM（待核实：出自 2010 手册，本车为 2009）"
+    spec_ref: null
+    qty: 1
+    lead_time_days: 7
+    needed_phase: P3
+    status: 未订
+    why: |
+      **这是整条关键路径上最早被卡的一件。** P3 之前的所有电气工作都做不了：
+      不装新电池就不能通电，不能通电就读不了故障码，读不到码就没有基线。
+      亏电电瓶硬撑着读码，出来的是一堆欠压假码，等于白做。
+      放了十年的原电瓶不要试图救活 —— AGM 深度放电后容量不可逆。
+    est_cost: 120
+    priority_note: 到货周期不是最长的，但它卡的阶段最早 —— 实际上它该第一个下单
+
+  # ───── 中等周期 ─────
+  - id: spark_plugs_primary
+    name: 火花塞（主塞）
+    spec: "Bosch YR5LDE 或 NGK DCPR 8 EKC，电极间隙 0.7–0.9mm"
+    spec_ref: "B级 · Haynes 4598 p1•1（PDF p21）"
+    part_number: "NGK DCPR8EKC / Bosch YR5LDE"
+    part_number_level: B
+    qty: 2
+    lead_time_days: 5
+    needed_phase: P2
+    status: 未订
+    why: |
+      ⚠️ **2026-09-14 订正**：此前写的 NGK MAR8B-JDS 是 2010 camhead 的塞，
+      本车是 2009 hexhead，型号完全不同。按旧数据下单会买错。
+      P2 要拆塞才能注渗透油盘车；拆下来的旧塞是诊断证据不是备件，
+      装回去等于把十年的积碳和锈重新塞进缸头。
+      拧紧扭力：NGK 20 Nm / Bosch 23 Nm（Haynes p1•2）。缸头是铝的，别拧过头。
+    est_cost: 30
+    needs_choice: Bosch 还是 NGK 由你定；两者扭力值不同，下单后记得用对那个数
+
+  - id: spark_plugs_secondary
+    name: 火花塞（副塞）
+    spec: null
+    qty: 2
+    lead_time_days: 5
+    needed_phase: P2
+    status: 未订
+    blocked_by: |
+      Haynes p43 确认本代有副塞（线圈分左右手），但**已拍页面没载副塞型号**。
+      不必等书：P2 拆塞时旧塞上印着型号，当场读出来再下单，3 天到货不卡进度。
+    why: 与主塞同理，十年的旧塞不装回去
+
+  - id: engine_oil
+    name: 机油
+    spec: "20W/50（或见 Pre-ride checks 黏度表），API SF 或更高，容量 4.0L"
+    spec_ref: "B级 · Haynes 4598 p1•2（PDF p22）"
+    qty: 5          # 买 5L：4.0L 是容量，换滤芯后要补，且留一点余量
+    lead_time_days: 3
+    needed_phase: P5
+    status: 未订
+    why: 时间本身就是消耗。添加剂包分解、抗氧化剂耗尽，颜色和黏度看不出来。
+    est_cost: 60
+
+  - id: brake_fluid
+    name: 刹车油
+    spec: DOT 4
+    spec_ref: "B级 · Haynes 4598 p1•2（PDF p22）；与 2010 手册 p118 一致，跨代交叉印证"
+    qty: 2          # 彻底冲洗整条管路 + ABS 循环排气，用量远大于「换一下」
+    lead_time_days: 3
+    needed_phase: P6
+    status: 未订
+    why: |
+      DOT4 吸湿。十年后含水量足以降低沸点（急下坡可能气阻）并从内部腐蚀卡钳与泵体。
+      是**彻底冲洗**不是补充。
+      ⚠️ 绝不可用 DOT5（硅基，与 DOT4 不相容，会毁掉密封件）。DOT5.1 才是相容的那个。
+    est_cost: 30
+
+  # ───── 件号未知，先查后订 ─────
+  - id: oil_filter
+    name: 机油滤芯
+    spec: null
+    part_number: null
+    part_number_level: null
+    qty: 1
+    lead_time_days: 7
+    needed_phase: P5
+    status: 未订
+    blocked_by: |
+      件号未知。VEHICLE.yml 里 oil_filter_pn 是 D 级待核实 —— **不许凭网上流传的号下单**，
+      camhead(2010+) 的滤芯号对本车 hexhead 不适用。
+      解法：拿 VIN 全码去 RealOEM 查本车配置对应的件号（A 级）。
+      → 需要你先在 P1 采到 VIN 全码。
+    why: 换机油不换滤芯等于没换
+
+  - id: drain_plug_washer
+    name: 放油螺塞垫圈
+    spec: null
+    part_number: null
+    qty: 2          # 机油 + 终传，各一
+    lead_time_days: 7
+    needed_phase: P5
+    status: 未订
+    blocked_by: 同上，件号待 RealOEM 查（VEHICLE.yml drain_plug_washer_pn 为 D 级）
+    why: 铝垫圈是一次性件，重复使用会渗
+
+  - id: air_filter
+    name: 空气滤芯
+    spec: null
+    part_number: null
+    qty: 1
+    lead_time_days: 7
+    needed_phase: P4
+    status: 未订
+    blocked_by: 件号待 RealOEM 查（VEHICLE.yml air_filter_pn 为 D 级）
+    why: 停放十年，滤纸可能已受潮霉变或有虫鼠筑巢
+
+  - id: final_drive_oil
+    name: 终传油
+    spec: "Castrol SAF-XO，容量 0.22 L"
+    spec_ref: "B级 · Haynes 4598 p1•2（PDF p22）"
+    qty: 1
+    lead_time_days: 3
+    needed_phase: P5
+    status: 未订
+    why: |
+      轴传动车最容易被忘的一处油，独立油腔，**不要用机油代替**。
+      ⚠️ 0.22 L 是 04-09 的值；网上流传的 180ml 是 2010 款的 —— 按那个加会少 40ml，
+      而本车已知故障模式正是终传轴承失效。放油时必查金属屑。
+      放油/加油螺塞扭力 20 Nm。
+    est_cost: 20
+
+  - id: gearbox_oil
+    name: 变速箱油
+    spec: "API GL5 SAE90 或 Castrol SAF-XO，容量 0.8–0.9 L"
+    spec_ref: "B级 · Haynes 4598 p1•2（PDF p22）"
+    qty: 1
+    lead_time_days: 3
+    needed_phase: P5
+    status: 未订
+    why: 独立油腔，与机油、终传油都不同。加注口盖与放油螺塞均 30 Nm
+    est_cost: 25
+
+  # ───── 耗材 ─────
+  - id: penetrating_oil
+    name: 渗透油
+    spec: null
+    qty: 2
+    lead_time_days: 2
+    needed_phase: P2
+    status: 未订
+    why: |
+      P2 缸内注油静置要用，量要给足 —— 静置时间不够是盘不动的常见原因，
+      而盘不动就只能停下来，整个流程卡在这里。
+    est_cost: 20
+
+  - id: fuel_line_orings
+    name: 燃油管快接头 O 环
+    spec: null
+    qty: 1          # 套
+    lead_time_days: 7
+    needed_phase: P4
+    status: 未订
+    blocked_by: 件号待 RealOEM 查
+    why: 橡胶件泡了十年变质汽油，一律按已失效对待。漏油=着火
+
+# ───────────────────────────────────────────────
+# 只有你能做的前置动作（挡住了 5 个件的下单）
+blockers_for_user:
+  - id: vin_full
+    what: 采集 VIN 全码（车架右侧转向管附近钢印，微距 + 侧光）
+    unblocks: [oil_filter, drain_plug_washer, air_filter, fuel_line_orings]
+    why: RealOEM 按 VIN 查才能拿到 A 级件号；凭车型猜号会买到 hexhead 的件
+    phase: P1
+
+  - id: recall_check
+    what: 打 1-800-525-7417 报 VIN 查召回执行状态
+    unblocks: []
+    why: 后轮法兰 15V141000 —— 铝法兰开裂后轮可能脱落。未确认前这台车不能上路（BLOCK）
+    phase: P1
+    cost: 0
+
+  - id: haynes_scan
+    what: 续拍 Haynes 4598（第 1 章已完成，PDF p21–50）
+    unblocks: [final_drive_oil, gearbox_oil]
+    why: 第 1 章已解锁油液规格与 21 条保养扭力值。**仍缺**：第 2 章 Engine 规格页（副塞型号）、第 7 章 Electrical（电瓶/ABS）、书末彩色接线图
+    phase: P0
