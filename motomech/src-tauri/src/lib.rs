@@ -19,6 +19,7 @@ pub mod parts;
 pub mod research;
 pub mod safety;
 pub mod script;
+pub mod setup;
 pub mod specref;
 pub mod symptom;
 pub mod platform;

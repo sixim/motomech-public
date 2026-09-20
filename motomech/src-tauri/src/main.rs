@@ -718,6 +718,89 @@ fn cmd_serve(root: Option<String>, host: String, port: u16) -> Result<()> {
             }
         }));
 
+        // ── 入门向导（非开发者：VIN → 建档 → 传手册，全在浏览器里）──
+        use motomech_lib::{coldstart, setup};
+        app = app.route("/setup", get(|| async {
+            axum::response::Html(setup::page())
+        }));
+
+        // VIN → coldstart（apply=true，落 VEHICLE.yml）。只接受回环/Tailscale 来源。
+        // coldstart 内部走 reqwest::blocking（NHTSA 解码），不能直接在 async 里调 ——
+        // 那会在异步上下文里 drop 一个 runtime 而 panic。挪到 spawn_blocking 线程。
+        let r = root_s.clone();
+        app = app.route("/v1/coldstart", post(move |
+            axum::extract::ConnectInfo(peer): axum::extract::ConnectInfo<std::net::SocketAddr>,
+            Json(body): Json<serde_json::Value>|
+        {
+            let r = r.clone();
+            async move {
+                if !capture::is_trusted(peer.ip()) {
+                    return Json(serde_json::json!({"error":
+                        format!("来源 {} 不可信 —— 只接受回环与 Tailscale(100.64.0.0/10)", peer.ip())}));
+                }
+                let vin = body.get("vin").and_then(|x| x.as_str()).unwrap_or("").trim().to_string();
+                if vin.is_empty() {
+                    return Json(serde_json::json!({"error": "没有提供 VIN"}));
+                }
+                let res = tokio::task::spawn_blocking(move || {
+                    let pf = Platform::new(Some(r))?;
+                    coldstart::run(&pf, &vin, true)
+                }).await;
+                match res {
+                    Ok(Ok(c)) => Json(serde_json::json!({
+                        "vehicle_id": c.vehicle_id,
+                        "make": c.identity.get("Make"),
+                        "model": c.identity.get("Model"),
+                        "year": c.identity.get("ModelYear"),
+                        "cylinders": c.identity.get("EngineCylinders"),
+                        "notes": c.notes})),
+                    Ok(Err(e)) => Json(serde_json::json!({"error": format!("{e:#}")})),
+                    Err(e) => Json(serde_json::json!({"error": format!("后台任务失败：{e}")})),
+                }
+            }
+        }));
+
+        // 手册 PDF 上传 → 存进该车 raw/。只接受 PDF、只接受回环/Tailscale。
+        let r = root_s.clone();
+        app = app.route("/v1/manual/upload", post(move |
+            axum::extract::ConnectInfo(peer): axum::extract::ConnectInfo<std::net::SocketAddr>,
+            mut mp: axum::extract::Multipart|
+        {
+            let r = r.clone();
+            async move {
+                if !capture::is_trusted(peer.ip()) {
+                    return Json(serde_json::json!({"error":
+                        format!("来源 {} 不可信 —— 只接受回环与 Tailscale(100.64.0.0/10)", peer.ip())}));
+                }
+                let pf = match Platform::new(Some(r)) { Ok(x) => x,
+                    Err(e) => return Json(serde_json::json!({"error": format!("{e:#}")})) };
+                let (mut veh, mut name, mut data) = (String::new(), String::new(), Vec::new());
+                loop {
+                    let field = match mp.next_field().await {
+                        Ok(Some(f)) => f, Ok(None) => break,
+                        Err(e) => return Json(serde_json::json!({"error":
+                            format!("表单解析失败：{e}")})),
+                    };
+                    let fname = field.name().unwrap_or("").to_string();
+                    if fname == "file" {
+                        name = field.file_name().unwrap_or("manual.pdf").to_string();
+                        match field.bytes().await { Ok(b) => data = b.to_vec(),
+                            Err(e) => return Json(serde_json::json!({"error":
+                                format!("读取文件失败：{e}")})) }
+                    } else if fname == "vehicle" {
+                        veh = field.text().await.unwrap_or_default();
+                    }
+                }
+                let vopt = if veh.trim().is_empty() { None } else { Some(veh.as_str()) };
+                match setup::save_manual(&pf, vopt, &name, &data) {
+                    Ok(dest) => Json(serde_json::json!({
+                        "saved": dest.file_name().map(|x| x.to_string_lossy().to_string()),
+                        "mb": format!("{:.1}", data.len() as f64 / 1_048_576.0)})),
+                    Err(e) => Json(serde_json::json!({"error": format!("{e:#}")})),
+                }
+            }
+        }));
+
         // ── 手机直采（Tailscale 直连）──────────────────────────────
         // 进程仍只绑 127.0.0.1；对外由 `tailscale serve --bg <port>` 代理，
         // 访问控制交给 Tailscale ACL，本程序不自己发明认证。

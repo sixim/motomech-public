@@ -2386,6 +2386,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "motomech"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "chrono",
+ "clap",
+ "directories",
+ "reqwest 0.12.28",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "serde_yaml_ng",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+ "thiserror 2.0.20",
+ "tokio",
+ "tower-http",
+]
+
+[[package]]
 name = "muda"
 version = "0.19.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3224,28 +3246,6 @@ name = "regex-syntax"
 version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
-
-[[package]]
-name = "motomech"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "chrono",
- "clap",
- "directories",
- "reqwest 0.12.28",
- "rusqlite",
- "serde",
- "serde_json",
- "serde_yaml_ng",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
- "thiserror 2.0.20",
- "tokio",
- "tower-http",
-]
 
 [[package]]
 name = "reqwest"
