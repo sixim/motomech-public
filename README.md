@@ -16,12 +16,18 @@ The issue isn't that AI is dumb. It's that AI doesn't know *which bike you have*
 
 ## What repairbench does
 
-repairbench is a **local service manual intelligence layer** between your PDF and your AI assistant.
+repairbench is a **local service manual intelligence layer** between your service manual and your AI assistant.
+
+You bring your manual — as a PDF, or by photographing a physical book with your phone.
+repairbench indexes it locally (the text never leaves your machine) and exposes a structured
+query interface your AI assistant can call tool-by-tool.
 
 ```
-Your PDF manual
-    ↓  tools/bookproc.sh
-Local page index (stays on your machine, gitignored)
+Your service manual (PDF or physical book)
+    ↓  tools/bookproc.sh  (OCR runs locally)
+Page index  ← stays on your machine, gitignored
+    +
+VEHICLE.yml  ← source-graded specs, applicability rules
     ↓  repairbench mcp
 MCP server
     ↓  tool calls
@@ -77,15 +83,53 @@ repairbench coldstart --vin YOUR_VIN
 cp -r vehicles/2009-BMW-R1200GS vehicles/YEAR-MAKE-MODEL
 ```
 
-### 2. Process your service manual
+### 2. Add your service manual (three paths)
+
+**You don't need to do this step before querying specs.** If someone has already contributed
+a vehicle package with `specs_verified` entries, `repair.spec` works immediately —
+no manual processing required.
+
+The manual index unlocks full-text search across all pages. Add it when you need it,
+one section at a time if you prefer.
+
+---
+
+**Path A — You have a PDF**
+
+Drop the file in your vehicle's manual directory and run the pipeline:
 
 ```bash
-# Drop your PDF into your vehicle's manual directory, then:
-tools/bookproc.sh vehicles/YEAR-MAKE-MODEL/10_手册资料/your-manual.pdf
+mkdir -p vehicles/YEAR-MAKE-MODEL/10_手册资料/third-party/your-manual/raw
+cp your-manual.pdf vehicles/YEAR-MAKE-MODEL/10_手册资料/third-party/your-manual/raw/
+tools/bookproc.sh -v YEAR-MAKE-MODEL
 ```
 
-The OCR text is extracted to a local `pages/` directory — gitignored, stays on your machine.
-The page index (headings, section map, source metadata) is tracked in git.
+Requires: `brew install ocrmypdf`
+
+---
+
+**Path B — You have a physical book**
+
+Start the local server, then photograph pages with your phone:
+
+```bash
+repairbench serve --port 8765
+```
+
+Open `http://localhost:8765/capture` on your phone (on the same network, or via
+[Tailscale serve](https://tailscale.com/kb/1242/tailscale-serve) for HTTPS).
+Tap each page to photograph and upload it. Then run the pipeline:
+
+```bash
+tools/bookproc.sh -v YEAR-MAKE-MODEL
+```
+
+The pipeline handles both PDFs and photos — it detects what's in `raw/` automatically.
+
+---
+
+The OCR text lands in a local `pages/` directory — gitignored, never committed.
+The page index (section map, source metadata) is tracked in git and shareable.
 
 ### 3. Connect to your AI assistant
 
