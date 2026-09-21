@@ -5,7 +5,9 @@
 //!   ② 拖入手册 PDF（可选）→ 存进该车的 raw/，等 bookproc 处理
 //!   ③ 完成，给出接入 AI 助手的下一步
 //!
+//! 双语（中/EN），按浏览器语言默认，可手动切换。
 //! 故意做成单文件、零外部依赖：和 capture 页一样，车库里网不一定好。
+//! 品牌显示名是 "motomech AI"；二进制/命令仍是 `motomech`（代码标识符不带空格）。
 
 use crate::platform::Platform;
 use anyhow::{bail, Result};
@@ -49,15 +51,19 @@ pub fn page() -> &'static str {
     PAGE
 }
 
-const PAGE: &str = r##"<!doctype html><html lang="zh"><head>
+const PAGE: &str = r##"<!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>开始使用 · motomech</title><style>
+<title>Get started · motomech AI</title><style>
 :root{--bg:#010309;--card:#0a1330;--line:#3d6bff33;--blue:#4a7dff;--bright:#6fa0ff;--txt:#eaf1ff;--dim:#7f92c8;--ok:#7effc0;--err:#ff9aa8}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.6 -apple-system,system-ui,sans-serif;
 padding:20px calc(16px + env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
 max-width:560px;margin:0 auto}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 h1{font-size:20px;margin:0 0 4px} .sub{color:var(--dim);font-size:13px;margin-bottom:24px}
+.lang{flex:none;margin-top:2px;padding:5px 11px;background:var(--card);border:1px solid var(--line);
+border-radius:8px;color:var(--bright);font-size:12px;cursor:pointer;white-space:nowrap}
+.lang:active{background:#12224d}
 .step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;
 opacity:.45;transition:opacity .3s} .step.active{opacity:1} .step.done{opacity:.7}
 .step h2{font-size:15px;margin:0 0 4px;color:var(--bright)} .step .desc{color:var(--dim);font-size:12px;margin-bottom:12px}
@@ -73,8 +79,8 @@ background:#12224d;color:var(--bright);font-size:15px;font-weight:600;text-align
 color:var(--dim);font-size:13px;cursor:pointer} .drop.over{border-color:var(--blue);background:#0d1836;color:var(--bright)}
 input[type=file]{display:none}
 .card-veh{margin-top:12px;padding:12px;background:#050b1e;border:1px solid var(--line);border-radius:9px;font-size:13px}
-.card-veh b{color:var(--bright)} .card-veh .k{color:var(--dim);display:inline-block;width:64px}
-#log{font-size:12px} .row{padding:8px 10px;border-radius:8px;margin-top:6px;word-break:break-all}
+.card-veh b{color:var(--bright)} .card-veh .k{color:var(--dim);display:inline-block;width:72px}
+#log,#upLog{font-size:12px} .row{padding:8px 10px;border-radius:8px;margin-top:6px;word-break:break-all}
 .row.ok{background:#0a2318;color:var(--ok)} .row.err{background:#2a0e12;color:var(--err)}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--bright);
 border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
@@ -82,58 +88,114 @@ border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-ri
 .note{margin-top:8px;color:var(--dim);font-size:11px} code{background:#050b1e;padding:1px 5px;border-radius:4px}
 .skip{color:var(--dim);font-size:12px;text-align:center;margin-top:8px;cursor:pointer;text-decoration:underline}
 </style></head><body>
-<h1>🏍 开始使用 motomech</h1>
-<div class="sub">三步搞定，全程不用碰命令行。</div>
+<div class="top">
+  <div>
+    <h1 data-t="h1"></h1>
+    <div class="sub" data-t="sub"></div>
+  </div>
+  <button class="lang" id="lang"></button>
+</div>
 
 <div class="step active" id="s1">
-  <h2><span class="num">1</span>你的车是什么？</h2>
-  <div class="desc">输入 VIN（车架号，17 位），我们从 NHTSA 官方数据库自动识别车型。</div>
+  <h2><span class="num">1</span><span data-t="s1h"></span></h2>
+  <div class="desc" data-t="s1d"></div>
   <label>VIN</label>
-  <input type="text" id="vin" placeholder="如 WB10..." maxlength="17" autocapitalize="characters" autocomplete="off">
-  <button class="btn" id="vinBtn">识别车型</button>
+  <input type="text" id="vin" maxlength="17" autocapitalize="characters" autocomplete="off">
+  <button class="btn" id="vinBtn" data-t="vinBtn"></button>
   <div id="vinResult"></div>
 </div>
 
 <div class="step" id="s2">
-  <h2><span class="num">2</span>上传你的手册（可选）</h2>
-  <div class="desc">有服务手册 PDF 就拖进来 —— 它只存在你自己的电脑上，永远不上传到网上。
-    没有也能用：车型规格已经可以查。</div>
-  <div class="drop" id="drop">📄 把 PDF 拖到这里，或点击选择文件</div>
+  <h2><span class="num">2</span><span data-t="s2h"></span></h2>
+  <div class="desc" data-t="s2d"></div>
+  <div class="drop" id="drop" data-t="drop"></div>
   <input type="file" id="pdf" accept="application/pdf">
   <div id="upLog"></div>
-  <div class="skip" id="skipUp">跳过这一步 →</div>
+  <div class="skip" id="skipUp" data-t="skip"></div>
 </div>
 
 <div class="step" id="s3">
-  <h2><span class="num">3</span>完成！接入你的 AI 助手</h2>
-  <div class="desc">在 Claude Desktop / Cursor 的 MCP 配置里加入 motomech，就能让 AI 查你这台车的精确规格：</div>
+  <h2><span class="num">3</span><span data-t="s3h"></span></h2>
+  <div class="desc" data-t="s3d"></div>
   <div class="card-veh"><code>motomech mcp</code></div>
-  <div class="note">手册 PDF 已存好，接下来在终端跑一次
-    <code>tools/bookproc.sh</code> 就能建立全文索引（这一步暂时还需要命令行，正在做成自动）。</div>
+  <div class="note" data-t="s3n"></div>
 </div>
 
 <script>
+const T={
+  zh:{
+    docTitle:"开始使用 · motomech AI",
+    h1:"🏍 开始使用 motomech AI", sub:"三步搞定，全程不用碰命令行。",
+    s1h:"你的车是什么？",
+    s1d:"输入 VIN（车架号，17 位），从 NHTSA 官方数据库自动识别车型。",
+    vinPh:"如 WB10...", vinBtn:"识别车型", vinBtn2:"重新识别",
+    s2h:"上传你的手册（可选）",
+    s2d:"有服务手册 PDF 就拖进来 —— 只存在你自己的电脑上，永不上传到网上。没有也能用：车型规格已可查。",
+    drop:"📄 把 PDF 拖到这里，或点击选择文件", skip:"跳过这一步 →",
+    s3h:"完成！接入你的 AI 助手",
+    s3d:"在 Claude Desktop / Cursor 的 MCP 配置里加入 motomech，AI 就能查你这台车的精确规格：",
+    s3n:"手册 PDF 已存好。接下来在终端跑一次 tools/bookproc.sh 建立全文索引（这步暂时还需命令行，正在做成自动）。",
+    querying:"查询 NHTSA…", vinShort:"VIN 太短，应为 17 位",
+    cyl:"气缸", cylUnit:" 缸", profile:"档案",
+    uploading:"上传中… ", saved:"已保存：", pdfOnly:"只接受 PDF 文件",
+    reqFail:"请求失败：", upFail:"上传失败：", other:"EN"
+  },
+  en:{
+    docTitle:"Get started · motomech AI",
+    h1:"🏍 Get started with motomech AI", sub:"Three steps. No command line.",
+    s1h:"What's your bike?",
+    s1d:"Enter your VIN (17 characters). We identify it from the official NHTSA database.",
+    vinPh:"e.g. WB10...", vinBtn:"Identify", vinBtn2:"Re-identify",
+    s2h:"Upload your manual (optional)",
+    s2d:"Drop your service manual PDF here — it stays on your own computer, never uploaded online. No manual? You can still query specs.",
+    drop:"📄 Drop a PDF here, or click to choose a file", skip:"Skip this step →",
+    s3h:"Done! Connect your AI assistant",
+    s3d:"Add motomech to your MCP config in Claude Desktop / Cursor, and your AI can query this bike's exact specs:",
+    s3n:"Your manual PDF is saved. Run tools/bookproc.sh once in a terminal to build the full-text index (this step still needs the CLI for now).",
+    querying:"Querying NHTSA…", vinShort:"VIN too short — should be 17 characters",
+    cyl:"Cylinders", cylUnit:"", profile:"Profile",
+    uploading:"Uploading… ", saved:"Saved: ", pdfOnly:"PDF files only",
+    reqFail:"Request failed: ", upFail:"Upload failed: ", other:"中"
+  }
+};
 const $=id=>document.getElementById(id);
-let vehicleId='';
+let lang='en', vehicleId='', identified=false;
+function tr(){
+  const d=T[lang];
+  document.documentElement.lang = lang==='zh'?'zh':'en';
+  document.title=d.docTitle;
+  document.querySelectorAll('[data-t]').forEach(el=>{el.textContent=d[el.dataset.t]||'';});
+  $('vin').placeholder=d.vinPh;
+  $('vinBtn').textContent = identified?d.vinBtn2:d.vinBtn;
+  $('lang').textContent=d.other;
+}
+function setLang(l){lang=l; try{localStorage.setItem('mm_lang',l);}catch(e){} tr();}
+$('lang').onclick=()=>setLang(lang==='zh'?'en':'zh');
+(function(){
+  let init='en';
+  try{const s=localStorage.getItem('mm_lang'); if(s==='zh'||s==='en') init=s;
+    else if((navigator.language||'').toLowerCase().startsWith('zh')) init='zh';}catch(e){}
+  setLang(init);
+})();
+
 function activate(n){for(let i=1;i<=3;i++){const s=$('s'+i);s.classList.remove('active');if(i<n)s.classList.add('done');}$('s'+n).classList.add('active');$('s'+n).scrollIntoView({behavior:'smooth',block:'nearest'});}
 function say(host,t,ok){const d=document.createElement('div');d.className='row '+(ok?'ok':'err');d.textContent=t;host.prepend(d);}
 
 $('vinBtn').onclick=async()=>{
-  const vin=$('vin').value.trim().toUpperCase();
-  const host=$('vinResult');
-  if(vin.length<11){host.innerHTML='<div class="row err">VIN 太短，应为 17 位</div>';return;}
-  $('vinBtn').disabled=true; host.innerHTML='<div class="row"><span class="spin"></span>查询 NHTSA…</div>';
+  const d=T[lang], vin=$('vin').value.trim().toUpperCase(), host=$('vinResult');
+  if(vin.length<11){host.innerHTML='<div class="row err">'+d.vinShort+'</div>';return;}
+  $('vinBtn').disabled=true; host.innerHTML='<div class="row"><span class="spin"></span>'+d.querying+'</div>';
   try{
     const r=await fetch('/v1/coldstart',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vin})});
     const j=await r.json();
     if(j.error){host.innerHTML='<div class="row err">❌ '+j.error+'</div>';$('vinBtn').disabled=false;return;}
-    vehicleId=j.vehicle_id||'';
-    host.innerHTML='<div class="card-veh">✅ <b>'+(j.make||'')+' '+(j.model||'')+' '+(j.year||'')+'</b>'
-      +(j.cylinders?'<br><span class="k">气缸</span>'+j.cylinders+' 缸':'')
-      +'<br><span class="k">档案</span>'+vehicleId+'</div>';
-    $('vinBtn').textContent='重新识别'; $('vinBtn').disabled=false;
+    vehicleId=j.vehicle_id||''; identified=true;
+    host.innerHTML='<div class="card-veh">✅ <b>'+[j.make,j.model,j.year].filter(Boolean).join(' ')+'</b>'
+      +(j.cylinders?'<br><span class="k">'+d.cyl+'</span>'+j.cylinders+d.cylUnit:'')
+      +'<br><span class="k">'+d.profile+'</span>'+vehicleId+'</div>';
+    $('vinBtn').textContent=d.vinBtn2; $('vinBtn').disabled=false;
     activate(2);
-  }catch(e){host.innerHTML='<div class="row err">❌ 请求失败：'+e+'</div>';$('vinBtn').disabled=false;}
+  }catch(e){host.innerHTML='<div class="row err">❌ '+d.reqFail+e+'</div>';$('vinBtn').disabled=false;}
 };
 
 const drop=$('drop'),pdf=$('pdf'),upLog=$('upLog');
@@ -145,14 +207,15 @@ pdf.onchange=e=>{if(e.target.files.length)upload(e.target.files[0]);};
 $('skipUp').onclick=()=>activate(3);
 
 async function upload(file){
-  if(!file.name.toLowerCase().endsWith('.pdf')){say(upLog,'只接受 PDF 文件',false);return;}
+  const d=T[lang];
+  if(!file.name.toLowerCase().endsWith('.pdf')){say(upLog,d.pdfOnly,false);return;}
   const fd=new FormData(); fd.append('vehicle',vehicleId); fd.append('file',file,file.name);
-  say(upLog,'上传中… '+file.name,true);
+  say(upLog,d.uploading+file.name,true);
   try{
     const r=await fetch('/v1/manual/upload',{method:'POST',body:fd});
     const j=await r.json();
     if(j.error){say(upLog,'❌ '+j.error,false);}
-    else{say(upLog,'✅ 已保存：'+j.saved+' ('+j.mb+' MB)',true);activate(3);}
-  }catch(e){say(upLog,'❌ 上传失败：'+e,false);}
+    else{say(upLog,'✅ '+d.saved+j.saved+' ('+j.mb+' MB)',true);activate(3);}
+  }catch(e){say(upLog,'❌ '+d.upFail+e,false);}
 }
 </script></body></html>"##;

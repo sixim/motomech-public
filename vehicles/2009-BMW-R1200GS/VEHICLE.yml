@@ -28,7 +28,7 @@ id: 2009-BMW-R1200GS
 make: BMW
 model: R1200GS
 year: 2009
-nickname: 瓜皮巨甜
+nickname: ~                      # 车辆昵称（可选）
 
 # ── 身份标识（决定所有资料选型）────────────────────
 engine_code: hexhead            # SOHC，2004–2009。**不是 camhead(2010+ DOHC)**
@@ -574,4 +574,4 @@ known_issues:
     item: 进气橡胶套老化开裂
     note: "导致怠速不稳和空气计量错误。停放车高频故障"
 
-vlog_path: "~/Documents/04_瓜皮巨甜/01_两个人 两个轮 《Two Souls, One Bike》/维修_2010 BMW R1200GS/80_Vlog"
+vlog_path: ~                          # 纪录片 Vlog 目录（个人功能，公开版留空）

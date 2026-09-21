@@ -127,10 +127,10 @@ export function runIntro(mount: HTMLElement, onDone: () => void) {
     <div class="stage"></div>
     <div class="spark-layer"></div>
     <div class="intro-title">
-      <div class="zh">两个人 · 两个轮</div>
-      <div class="en">motomech</div>
+      <div class="zh">你的手册 · 你的 AI</div>
+      <div class="en">motomech AI</div>
     </div>
-    <div class="skip">点击任意处跳过</div>`;
+    <div class="skip">点击任意处跳过 / tap to skip</div>`;
   mount.appendChild(ov);
   const stage = ov.querySelector(".stage") as HTMLElement;
 

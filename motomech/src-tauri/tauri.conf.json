@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "motomech",
+        "title": "motomech AI",
         "width": 800,
         "height": 600
       }
