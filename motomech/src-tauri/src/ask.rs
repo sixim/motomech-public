@@ -3,7 +3,8 @@
 //! 这一步最大的风险:LLM 会自信地编扭力值,哪怕系统提示叫它别编。
 //! 所以答案分两层,永不混:
 //!   1. facts:检索到的**已核实规格 + 手册出处**,原样带页码。这是硬事实,不经模型。
-//!   2. answer:模型把这些事实串成人话,**明确标为「生成」**。
+//!   2. answer:**Gus**(絮叨的老修车佬人设,见 gus.rs)把这些事实串成人话,**明确标为「生成」**。
+//!      Gus 说完要过数字白名单:回答里每个数字都必须在事实层里找得到,否则整段拦下。
 //! 即使模型把数字说错,facts 就在旁边、带 A/B 级出处和页码,人一眼能对。
 //!
 //! 硬约束(与全系统一致):
@@ -11,7 +12,7 @@
 //! - 命中冲突的规格,明确告诉模型「这个值有冲突,别给数」
 //! - 检索不到相关事实时,**不调模型编答案** —— 直说不知道,给下一步
 
-use crate::{api, db, platform::Platform, provider};
+use crate::{api, db, gus, platform::Platform, provider};
 use anyhow::Result;
 use serde::Serialize;
 
@@ -192,21 +193,31 @@ pub fn ask(p: &Platform, vehicle: Option<&str>, question: &str, provider_id: Opt
     let chosen = provider::pick(&provs, provider_id, &default)?;
     let context = facts.iter().map(|f| format!("- [{}|{}] {}", f.kind, f.source, f.text))
         .collect::<Vec<_>>().join("\n");
-    let system = format!(
-        "你是 {} 的维修顾问。**只能依据下面提供的已核实事实回答,不得引入任何其他数字或规格。**\n\
-         规则:\n\
-         1. 扭力值、间隙、容量等具体数字**只能照抄事实里的**,一个字都不能改,也不能补充事实里没有的数字。\n\
-         2. 若某项标了「有互相矛盾的值/冲突」,**明确告诉用户该值未定、不可使用**,绝不替它选一个。\n\
-         3. 事实不足以回答时,直说「已核实数据里没有这部分」,不要猜。\n\
-         4. 简洁,中文。\n\n\
-         已核实事实:\n{}", v.id, context);
+    let system = gus::system_prompt(&v.id, &context);
 
     match provider::ask(&chosen, &system, question) {
         Ok(a) => {
             warnings.extend(a.warnings);
+            // 先清掉漏进正文的思考过程,再检查"最终说给用户听的那段话"
+            let said = gus::clean_answer(&a.text);
+            if said.is_none() && !a.text.trim().is_empty() {
+                warnings.push("模型的思考没写完、没有最终回答 —— 已丢弃,不展示半截思考。".into());
+            }
+            // 数字白名单:Gus 说出事实层里没有的数字 → 整段拦下(fail-closed),事实层照给
+            if let Err(bad) = gus::check_numbers(said.as_deref().unwrap_or(""), &context, question, &v.id) {
+                warnings.push(format!(
+                    "Gus 的回答里有事实层找不到的数字 [{}] —— 整段已拦下。数字只认上面的已核实事实。",
+                    bad.join(", ")));
+                return Ok(AskResult {
+                    vehicle: v.id, question: question.into(), facts,
+                    answer: None,
+                    answer_source: format!("已拦下({} · {}):含未核实数字", a.provider, a.model),
+                    reasoning: a.reasoning, warnings,
+                });
+            }
             Ok(AskResult {
                 vehicle: v.id, question: question.into(), facts,
-                answer: if a.text.trim().is_empty() { None } else { Some(a.text) },
+                answer: said,
                 answer_source: format!("{} · {}", a.provider, a.model),
                 reasoning: a.reasoning, warnings,
             })
@@ -236,8 +247,8 @@ pub fn render(r: &AskResult) -> String {
     }
     match &r.answer {
         Some(a) => {
-            o.push_str(&format!("━━━ 顾问回答(由模型生成 · {})━━━\n{}\n", r.answer_source, a));
-            o.push_str("\n⚠️ 上面这段是生成的。数字以「已核实事实」为准 —— 两者不一致时信事实。\n");
+            o.push_str(&format!("━━━ Gus 说(模型生成 · {})━━━\n{}\n", r.answer_source, a));
+            o.push_str("\n⚠️ 上面这段是 Gus(模型)说的。他说的每个数字都已核对过在事实层里,但数字仍以「已核实事实」为准。\n");
         }
         None => o.push_str(&format!("(无生成回答:{})\n", r.answer_source)),
     }

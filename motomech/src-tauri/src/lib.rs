@@ -13,6 +13,7 @@ pub mod crossval;
 pub mod db;
 pub mod diag;
 pub mod gaps;
+pub mod gus;
 pub mod index;
 pub mod mcp;
 pub mod parts;

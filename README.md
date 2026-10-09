@@ -48,6 +48,23 @@ Not a guess. A page reference you can go check.
 
 ---
 
+## Meet Gus
+
+The built-in assistant is **Gus** — a talkative old garage mechanic who's been fixing bikes his whole life.
+He'll chat, grumble about cheap designs, and nag you about safety. What he will **not** do is make up a number.
+
+Every answer comes in two layers:
+
+1. **Verified facts** — straight from your manual, with source grade and page. Gus never touches this layer.
+2. **Gus** — turns those facts into plain talk, in your language.
+
+Then a program checks him: every number in what Gus says must already appear in the facts layer.
+If he tosses in a "usually around 40 Nm" from memory, or converts 0.22 L to "220 ml" on his own, the whole reply is
+withheld and you get only the verified facts. A chatty character is exactly the one most likely to slip a number in,
+so the check is code, not a prompt asking nicely.
+
+---
+
 ## Key design principles
 
 | | |
