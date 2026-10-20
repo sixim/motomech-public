@@ -12,7 +12,7 @@ use clap::{Parser, Subcommand};
 )]
 pub struct Cli {
     /// 平台根目录（数据真相源）
-    #[arg(long, env = "REPAIRBENCH_ROOT", global = true)]
+    #[arg(long, env = "MOTOMECH_ROOT", global = true)]
     pub root: Option<String>,
 
     /// 车辆 id；不给则读平台根的 .current-vehicle

@@ -157,6 +157,15 @@ fn acquire(vehicle: Option<String>) -> Result<acquire::Acquire, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .setup(|_app| {
+            // 新克隆/新装的用户没有 .index/，不补的话工作台全是 0。失败不阻止启动，各视图照常报错。
+            match Platform::new(None).and_then(|p| index::ensure(&p)) {
+                Ok(true) => eprintln!("索引库不存在，已从文件自动建好"),
+                Ok(false) => {}
+                Err(e) => eprintln!("自动建索引失败：{e:#}"),
+            }
+            Ok(())
+        })
 
         .invoke_handler(tauri::generate_handler![workbench, vehicles, specs, search, parts,
             log, vlog, known_issues, safety, briefing,

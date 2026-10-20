@@ -9,13 +9,21 @@ use std::path::{Path, PathBuf};
 
 pub const DEFAULT_ROOT: &str = "Ai Developer/AI+摩托维修助理";
 
+fn env_root() -> Option<String> {
+    ["MOTOMECH_ROOT", "REPAIRBENCH_ROOT"].iter()
+        .filter_map(|k| std::env::var(k).ok())
+        .find(|s| !s.trim().is_empty())
+}
+
 pub struct Platform {
     pub root: PathBuf,
 }
 
 impl Platform {
     pub fn new(root: Option<String>) -> Result<Self> {
-        let root = match root {
+        // 顺序：--root > $MOTOMECH_ROOT > $REPAIRBENCH_ROOT（改名前的旧名，兼容老配置）> 默认。
+        // 桌面 app 不带参数启动，只能靠这里的环境变量找到数据目录。
+        let root = match root.or_else(env_root) {
             Some(r) => PathBuf::from(shellexpand(&r)),
             None => {
                 let home = std::env::var("HOME").context("读不到 $HOME")?;
@@ -23,7 +31,7 @@ impl Platform {
             }
         };
         if !root.is_dir() {
-            return Err(anyhow!("平台目录不存在: {}\n用 --root 指定，或设 REPAIRBENCH_ROOT", root.display()));
+            return Err(anyhow!("平台目录不存在: {}\n用 --root 指定，或设 MOTOMECH_ROOT", root.display()));
         }
         Ok(Self { root })
     }

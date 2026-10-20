@@ -457,6 +457,7 @@ fn cmd_search(root: Option<String>, vehicle: Option<&str>, query: &str,
 
 fn cmd_serve(root: Option<String>, host: String, port: u16) -> Result<()> {
     let p = Platform::new(root)?;
+    if index::ensure(&p)? { eprintln!("索引库不存在，已从文件自动建好：{}", p.index_db().display()); }
     let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
     rt.block_on(async move {
         use axum::{extract::Query, routing::{get, post}, Json, Router};
@@ -1056,6 +1057,9 @@ fn cmd_ask(root: Option<String>, vehicle: Option<&str>, question: &str,
 }
 
 fn cmd_mcp(root: Option<String>) -> Result<()> {
+    // mcp 的 stdout 是协议通道，提示一律走 stderr
+    let p = Platform::new(root.clone())?;
+    if index::ensure(&p)? { eprintln!("索引库不存在，已从文件自动建好：{}", p.index_db().display()); }
     motomech_lib::mcp::serve(root)
 }
 

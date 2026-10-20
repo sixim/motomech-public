@@ -492,3 +492,24 @@ fn parse_photo_name(p: &Path) -> (Option<String>, Option<String>) {
         .map(|s| s.to_string_lossy().to_string());
     (phase, kind)
 }
+
+/// 索引库不存在时，从文件全量建一次；返回是否新建了。
+/// 文件是真相源、库只是可重建的索引 —— 库缺了就该自己补上，
+/// 而不是让新用户打开 app 看到一片 0。建到一半失败则删掉半成品，下次启动重试。
+pub fn ensure(p: &Platform) -> Result<bool> {
+    let db_path = p.index_db();
+    if db_path.exists() { return Ok(false); }
+    let built = (|| -> Result<()> {
+        let mut conn = crate::db::open(&db_path)?;
+        for id in p.list_vehicles()? {
+            let v = p.resolve_vehicle(Some(&id))?;
+            index_vehicle(&mut conn, p, &v)?;
+        }
+        Ok(())
+    })();
+    if let Err(e) = built {
+        let _ = std::fs::remove_file(&db_path);
+        return Err(e.context("首次自动建索引失败"));
+    }
+    Ok(true)
+}

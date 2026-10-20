@@ -5,7 +5,7 @@
 #   bash tools/install-launchagent.sh [--port 8765]
 #
 # What it does:
-#   1. Fills in REPAIRBENCH_ROOT in the plist template
+#   1. Fills in MOTOMECH_ROOT in the plist template
 #   2. Copies to ~/Library/LaunchAgents/
 #   3. Loads with launchctl
 #
@@ -28,7 +28,7 @@ mkdir -p "$HOME/Library/LaunchAgents"
 mkdir -p "$REPO_ROOT/logs"
 
 sed \
-  -e "s|REPAIRBENCH_ROOT|$REPO_ROOT|g" \
+  -e "s|MOTOMECH_ROOT|$REPO_ROOT|g" \
   -e "s|8765|$PORT|g" \
   "$PLIST_SRC" > "$PLIST_DEST"
 

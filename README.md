@@ -90,6 +90,19 @@ motomech <command>    # CLI: spec, search, job-card, diag, symptom, log, …
 
 ## Quick start
 
+### 0. Point motomech at your data folder
+
+motomech reads everything from one folder (the clone of this repo, or your own copy).
+Tell it where that folder is:
+
+```bash
+export MOTOMECH_ROOT="$HOME/path/to/motomech-public"
+```
+
+Put that line in `~/.zprofile` so the desktop app finds it too. You can also pass
+`--root <folder>` to any CLI command. On first launch motomech builds its search index
+from the files automatically — no manual `index` step needed.
+
 ### 1. Register your vehicle
 
 ```bash
