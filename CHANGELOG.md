@@ -9,6 +9,27 @@ Format: [Semantic Versioning](https://semver.org/) — `MAJOR.MINOR.PATCH`
 
 ---
 
+## [0.2.0] — 2026-10-20
+
+### Added
+- **Browser setup wizard** at `/setup` (serve mode): enter a VIN → NHTSA decode → `VEHICLE.yml` is created; drag in your manual PDF → saved locally to the vehicle's `raw/`. No command line needed for onboarding.
+- **中文 / English toggle** on the setup wizard; defaults to the browser language and remembers your choice.
+- **Gus** — the voice of the Q&A layer: a talkative old-school mechanic. Every number Gus says must exist in the fact layer (matched by unit class: N·m, litres, length, page…); answers with an invented number are blocked.
+- **Auto-index on first launch**: desktop app, `serve` and `mcp` build the search index from files when it is missing. A fresh clone now shows the reference specs instead of zeros.
+- **macOS desktop app** (Apple Silicon `.dmg`) attached to this release.
+
+### Changed
+- Display name is now **motomech AI** (window title, page title, intro). The command stays `motomech`.
+- Data-folder environment variable is now `MOTOMECH_ROOT`; the old `REPAIRBENCH_ROOT` is still honoured. The desktop app now respects it too.
+
+### Fixed
+- `/v1/coldstart` no longer crashes the server: the blocking NHTSA call runs off the async runtime.
+
+### Removed
+- Personal data left in the reference vehicle (bike nickname, local Vlog path) and the documentary title in the intro screen.
+
+---
+
 ## [0.1.0] — 2026-09-20
 
 Initial public release.
@@ -48,15 +69,14 @@ Initial public release.
 
 ## Roadmap
 
-### [0.2.0] — planned
-- Web-based setup flow: VIN input + PDF drag-and-drop (no CLI required)
-- Pre-built binaries for macOS (Apple Silicon + Intel), Windows, Linux
-- Additional vehicle packages
-
 ### [0.3.0] — planned
+- First-launch folder picker in the desktop app (no env var needed)
+- Run the manual OCR/index step from the setup wizard (no CLI)
+- Pre-built binaries for macOS Intel, Windows, Linux
 - In-app vehicle package browser
 - Community package validation CI
 
 ---
 
+[0.2.0]: https://github.com/sixim/motomech-public/releases/tag/v0.2.0
 [0.1.0]: https://github.com/sixim/motomech-public/releases/tag/v0.1.0

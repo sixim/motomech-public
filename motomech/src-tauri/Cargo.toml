@@ -1,6 +1,6 @@
 [package]
 name = "motomech"
-version = "0.1.0"
+version = "0.2.0"
 description = "维修助理 —— 手册知识库 · 诊断 · 作业单 · MCP/HTTP 接口"
 authors = ["Simon"]
 edition = "2021"
